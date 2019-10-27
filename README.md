@@ -8,7 +8,8 @@ more of a learning exercise than anything. I'll
 be adding more features over time, but for now
 it has basic functionality.
 
-WARNING: This one-file project is full of magic
+WARNING: This ~~one-file~~ (two file, with
+new renderer) project is full of magic
 numbers, poorly defined structs, messy memory
 management, and a very innefficient raycasting
 algorithm. If you managed to stumble across this
