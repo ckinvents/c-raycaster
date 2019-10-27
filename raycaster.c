@@ -4,8 +4,8 @@
 #include <math.h>
 #include "render.h"
 
-const unsigned int WIDTH = 800/4;
-const unsigned int HEIGHT = 640/4;
+const unsigned int WIDTH = 800;
+const unsigned int HEIGHT = 640;
 
 // Test renderer
 SDL_Renderer* renderer = NULL;
@@ -51,27 +51,13 @@ void deleteMap(unsigned char** map, int width, int height)
 	free(map);
 }
 
-double adjustedColorDiff(int r1, int g1, int b1, int r2, int g2, int b2)
-{
-	double rFact = 0.26;
-	double gFact = 0.55;
-	double bFact = 0.19;
-	double bright1 = sqrt((rFact * r1) * (rFact * r1) + (gFact * g1) * (gFact * g1) + (bFact * b1) * (bFact * b1));
-	double bright2 = sqrt((rFact * r2) * (rFact * r2) + (gFact * g2) * (gFact * g2) + (bFact * b2) * (bFact * b2));
-
-	double baseDif = sqrt((rFact * (r1 - r2)) * (rFact * (r1 - r2)) + (rFact * (g1 - g2)) * (rFact * (g1 - g2)) + (rFact * (b1 - b2)) * (rFact * (b1 - b2)));
-	double brightDif = abs(bright1 - bright2);
-
-	return 0.5 * (brightDif - baseDif) + baseDif;
-}
-
 void setPalletteRenderColor(PixBuffer* buffer, int r, int g, int b, int a, SDL_Color* colorPallette, int numColor)
 {
 	int colNum = 0;
 	uint32_t minColorDif = 0xFF*0xFF*3;//adjustedColorDiff(r, g, b, colorPallette[0].r, colorPallette[0].g, colorPallette[0].b);
 	for (int i = 1; i < numColor; i++)
 	{
-		uint32_t colorDif = (uint32_t)(colorPallette[i].r - r)*(colorPallette[i].r - r) + (colorPallette[i].g - g)*(colorPallette[i].g - g) + (colorPallette[i].b - b)*(colorPallette[i].b - b);
+		uint32_t colorDif = (uint32_t)(colorPallette[i].r - r)*(colorPallette[i].r - r) + (uint32_t)(colorPallette[i].g - g)*(colorPallette[i].g - g) + (uint32_t)(colorPallette[i].b - b)*(colorPallette[i].b - b);
 		double rFact = 0.26;
 		double bFact = 0.55;
 		double gFact = 0.19;
@@ -146,14 +132,14 @@ void raycastRender(PixBuffer* buffer,  Player* player, uint32_t width, uint32_t 
 					//	colorGrad = 0;
 					//}
 					//printf("Depth: %f\n", depth);
-					if (!player->colorPallette)
-					{
-						PixBuffer_setColor(buffer, (int)((double)colorDat.r * (colorGrad)), (int)((double)colorDat.g * (colorGrad)), (int)((double)colorDat.b * (colorGrad)), 0xFF);
-					}
-					else
-					{
-						setPalletteRenderColor(buffer, (int)((double)colorDat.r * (colorGrad)), (int)((double)colorDat.g * (colorGrad)), (int)((double)colorDat.b * (colorGrad)), 0xFF, player->colorPallette, player->palletteSize);
-					}
+					// if (!player->colorPallette)
+					// {
+					PixBuffer_setColor(buffer, (int)((double)colorDat.r * (colorGrad)), (int)((double)colorDat.g * (colorGrad)), (int)((double)colorDat.b * (colorGrad)), 0xFF);
+					// }
+					// else
+					// {
+					// 	setPalletteRenderColor(buffer, (int)((double)colorDat.r * (colorGrad)), (int)((double)colorDat.g * (colorGrad)), (int)((double)colorDat.b * (colorGrad)), 0xFF, player->colorPallette, player->palletteSize);
+					// }
 					double drawHeight = (double)(height / (depth * 10));
 					PixBuffer_drawColumn(buffer, i, (int)((double)height / 2.0 - drawHeight), drawHeight*2);
 					// Ray visualizer
@@ -162,15 +148,15 @@ void raycastRender(PixBuffer* buffer,  Player* player, uint32_t width, uint32_t 
 				}
 				else
 				{
-					if (!player->colorPallette)
-					{
-						PixBuffer_setColor(buffer, colorDat.r, colorDat.g, colorDat.b, colorDat.a);
-					}
-					else
-					{
-						setPalletteRenderColor(buffer, colorDat.r, colorDat.g, colorDat.b, colorDat.a, player->colorPallette, player->palletteSize);
-					}
-					PixBuffer_drawColumn(buffer, i, 0, height);
+					// if (!player->colorPallette)
+					// {
+					PixBuffer_setColor(buffer, colorDat.r, colorDat.g, colorDat.b, colorDat.a);
+					// }
+					// else
+					// {
+					// 	setPalletteRenderColor(buffer, colorDat.r, colorDat.g, colorDat.b, colorDat.a, player->colorPallette, player->palletteSize);
+					// }
+					// PixBuffer_drawColumn(buffer, i, 0, height);
 				}
 				break;
 			}
@@ -323,7 +309,7 @@ int main(int argc, char* argv[])
 		testPlayer->x = 2.5;
 		testPlayer->y = 3.5;
 		testPlayer->fov = M_PI/2;
-		testPlayer->colorPallette = picoColorPallette;
+		testPlayer->colorPallette = commodoreColorPallette;
 		testPlayer->palletteSize = palletteColorNum;
 	}
 
@@ -380,6 +366,7 @@ int main(int argc, char* argv[])
 		PixBuffer_clearBuffer(&buffer);
 		raycastRender(&buffer, testPlayer, WIDTH, HEIGHT, &testMap, 0.005, angleValues);
 		drawMinimap(&buffer, testPlayer, WIDTH, HEIGHT, &testMap, 2);
+		//PixBuffer_paletteFilter(&buffer,picoColorPallette, 16);
 		SDL_UpdateTexture(drawTex, NULL, buffer.pixels, sizeof(uint32_t) * WIDTH);
 		SDL_RenderCopy(renderer, drawTex, NULL, NULL);
 		SDL_RenderPresent(renderer);
