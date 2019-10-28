@@ -4,8 +4,12 @@
 #include <math.h>
 #include "render.h"
 
-const unsigned int WIDTH = 800;
-const unsigned int HEIGHT = 640;
+const unsigned int SCALE = 4;
+const unsigned int WIDTH = 1000/SCALE;
+const unsigned int HEIGHT = 800/SCALE;
+#define MAP_SCALE 2
+#define MAP_WIDTH 10
+#define MAP_HEIGHT 13
 
 // Test renderer
 SDL_Renderer* renderer = NULL;
@@ -195,7 +199,7 @@ void drawMinimap(PixBuffer* buffer, Player* player, unsigned int width, unsigned
 	blockRect.w = blockSize;
 	blockRect.h = blockSize;
 
-	PixBuffer_setColor(buffer, 0x00, 0x00, 0x00, 0xFF);
+	PixBuffer_setColor(buffer, 0x00, 0x00, 0x00, 0x40);
 	PixBuffer_drawRect(buffer, &mapRect);
 	//SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
 	//SDL_RenderDrawRect(renderer, &mapRect);
@@ -228,28 +232,27 @@ int main(int argc, char* argv[])
 	window = SDL_CreateWindow(
 		"Raycaster Thing",
 		30, 30,
-		WIDTH*4, HEIGHT*4,
+		WIDTH*SCALE, HEIGHT*SCALE,
 		SDL_WINDOW_OPENGL
 	);
 
 	uint32_t runTime = 0;
 	double dt = 0;
 
-	unsigned char testMapChar[117] = {
-		1,2,3,4,1,2,2,2,1,
-		4,0,0,0,2,0,0,0,3,
-		3,0,1,0,3,0,0,0,3,
-		2,0,0,0,0,0,0,0,3,
-		1,4,3,2,1,4,0,4,1,
-		0,0,0,0,0,4,0,4,0,
-		0,0,0,0,0,4,0,4,0,
-		0,0,0,0,0,4,0,4,0,
-		0,0,0,0,4,4,0,4,4,
-		0,0,0,0,4,0,0,0,4,
-		0,0,0,0,4,0,0,0,4,
-		0,0,0,0,4,0,0,0,4,
-		0,0,0,0,4,4,4,4,4,
-
+	unsigned char testMapChar[MAP_WIDTH*MAP_HEIGHT] = {
+		2,2,2,2,2,3,3,3,3,3,
+		2,0,0,0,2,3,0,0,0,3,
+		2,0,1,0,2,3,0,0,0,3,
+		2,0,0,0,0,0,0,0,0,3,
+		2,2,2,2,2,3,3,0,3,3,
+		0,0,0,0,0,0,4,0,4,0,
+		0,0,0,0,0,0,4,0,4,0,
+		0,0,0,0,0,0,4,0,4,0,
+		0,0,0,0,0,4,4,0,4,4,
+		0,0,0,0,0,4,0,0,0,4,
+		0,0,0,0,0,0,0,0,0,4,
+		0,0,0,0,0,4,0,0,0,4,
+		0,0,0,0,0,4,4,4,4,4
 	};
 
 	SDL_Color colorKey[4] = {
@@ -296,16 +299,28 @@ int main(int argc, char* argv[])
 		{255,119,168,255},
 		{255,204,170,255},
 	};
+	SDL_Color gameboyColorPalette[4] = {
+		{0x33,0x2c,0x50,0xff},
+		{0x46,0x87,0x8f,0xff},
+		{0x94,0xe3,0x44,0xff},
+		{0xe2,0xf3,0xe4,0xff}
+	};
 	int palletteColorNum = 16;
 
 	Map testMap;
-	generateMap(&testMap, testMapChar, 9, 13, colorKey, 4);
+	generateMap(&testMap, testMapChar, MAP_WIDTH, MAP_HEIGHT, colorKey, 4);
+	uint32_t mapPixels[WIDTH*HEIGHT];
+	PixBuffer mapBuffer;
+	mapBuffer.pixels = mapPixels;
+	mapBuffer.width = WIDTH;
+	mapBuffer.height = HEIGHT;
+
 
 	Player* testPlayer = malloc(sizeof(Player));
 	if (testPlayer)
 	{
 		testPlayer->angle = M_PI / 2.0;
-		testPlayer->dist = 5.0;
+		testPlayer->dist = 3.0;
 		testPlayer->x = 2.5;
 		testPlayer->y = 3.5;
 		testPlayer->fov = M_PI/2;
@@ -317,15 +332,17 @@ int main(int argc, char* argv[])
 	generateAngleValues(WIDTH, testPlayer->fov, angleValues);
 
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-	SDL_RenderSetScale(renderer, 4, 4);
+	SDL_RenderSetScale(renderer, SCALE, SCALE);
+	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
 	drawTex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STATIC, WIDTH, HEIGHT);
+	printf("%d",SDL_SetTextureBlendMode(drawTex, SDL_BLENDMODE_BLEND));
 	uint32_t pixels[WIDTH * HEIGHT];
 	PixBuffer buffer;
 	buffer.pixels = pixels;
 	buffer.width = WIDTH;
 	buffer.height = HEIGHT;
-	
+	SDL_Rect screenRect = {0,0,WIDTH,HEIGHT};
 
 	uint8_t quit = 0;
 	while(!quit)
@@ -339,15 +356,24 @@ int main(int argc, char* argv[])
 			}
 		}
 		keys = SDL_GetKeyboardState(NULL);
-		if (keys[SDL_SCANCODE_W])
+		if (keys[SDL_SCANCODE_W]||keys[SDL_SCANCODE_S])
 		{
-			testPlayer->x += dt * cos(testPlayer->angle) / (4 - keys[SDL_SCANCODE_LSHIFT] * 3);
-			testPlayer->y += dt * sin(testPlayer->angle) / (4 - keys[SDL_SCANCODE_LSHIFT] * 3);
-		}
-		else if (keys[SDL_SCANCODE_S])
-		{
-			testPlayer->x -= dt * cos(testPlayer->angle) / (4 - keys[SDL_SCANCODE_LSHIFT] * 3);
-			testPlayer->y -= dt * sin(testPlayer->angle) / (4 - keys[SDL_SCANCODE_LSHIFT] * 3);
+			double dx = 2 * dt * cos(testPlayer->angle) / (4 - keys[SDL_SCANCODE_LSHIFT] * 3);
+			double dy = 2 * dt * sin(testPlayer->angle) / (4 - keys[SDL_SCANCODE_LSHIFT] * 3);
+			if (keys[SDL_SCANCODE_W])
+			{
+				if (testPlayer->x+dx > MAP_WIDTH || testPlayer->x+dx < 0 || testMap.data[(int)floor(testPlayer->y)*testMap.width+(int)floor(testPlayer->x+dx)] == 0)
+					testPlayer->x += dx;
+				if (testPlayer->y+dy > MAP_HEIGHT || testPlayer->y+dy < 0 || testMap.data[(int)floor(testPlayer->y+dy)*testMap.width+(int)floor(testPlayer->x)] == 0)
+					testPlayer->y += dy;
+			}
+			else if (keys[SDL_SCANCODE_S])
+			{
+				if (testPlayer->x-dx > MAP_WIDTH || testPlayer->x-dx < 0 || testMap.data[(int)floor(testPlayer->y)*testMap.width+(int)floor(testPlayer->x-dx)] == 0)
+					testPlayer->x -= dx;
+				if (testPlayer->y-dy > MAP_HEIGHT || testPlayer->y-dy < 0 || testMap.data[(int)floor(testPlayer->y-dy)*testMap.width+(int)floor(testPlayer->x)] == 0)
+					testPlayer->y -= dy;
+			}
 		}
 		if (keys[SDL_SCANCODE_A])
 		{
@@ -362,11 +388,15 @@ int main(int argc, char* argv[])
 		SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
 		SDL_RenderClear(renderer);
 		SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-		PixBuffer_setColor(&buffer, 0, 0, 0, 0xFF);
+		PixBuffer_setColor(&buffer, 0,0,0,0xff);
 		PixBuffer_clearBuffer(&buffer);
 		raycastRender(&buffer, testPlayer, WIDTH, HEIGHT, &testMap, 0.005, angleValues);
+		PixBuffer_orderDither(&buffer, commodoreColorPallette, 16);
+		SDL_UpdateTexture(drawTex, NULL, buffer.pixels, sizeof(uint32_t) * WIDTH);
+		SDL_RenderCopy(renderer, drawTex, NULL, NULL);
+		PixBuffer_clearBuffer(&buffer);
 		drawMinimap(&buffer, testPlayer, WIDTH, HEIGHT, &testMap, 2);
-		//PixBuffer_paletteFilter(&buffer,picoColorPallette, 16);
+		//PixBuffer_paletteFilter(&buffer,commodoreColorPallette, 16);
 		SDL_UpdateTexture(drawTex, NULL, buffer.pixels, sizeof(uint32_t) * WIDTH);
 		SDL_RenderCopy(renderer, drawTex, NULL, NULL);
 		SDL_RenderPresent(renderer);
