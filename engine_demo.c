@@ -255,7 +255,7 @@ int main(int argc, char* argv[])
 		SDL_RenderCopy(renderer, drawTex, NULL, NULL);
 		//PixBuffer_clearBuffer(&buffer);
 		//RayEngine_drawMinimap(&buffer, testPlayer, WIDTH, HEIGHT, &testMap, 2);
-		//PixBuffer_paletteFilter(&buffer, solarizedDarkPalette, 16);
+		//PixBuffer_orderDither256(&buffer, 5);
 		//SDL_UpdateTexture(drawTex, NULL, buffer.pixels, sizeof(uint32_t) * WIDTH);
 		//SDL_RenderCopy(renderer, drawTex, NULL, NULL);
 		SDL_RenderPresent(renderer);

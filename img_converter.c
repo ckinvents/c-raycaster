@@ -3,15 +3,15 @@
 #include <stdint.h>
 #include <string.h>
 
-#define BUFF_SIZE 255
+#define BUFF_SIZE 6000
 
 int main(void)
 {
-    FILE* imgFile = fopen("box.c", "r");
-    FILE* convFile = fopen("box_conv.c", "w+");
+    FILE* imgFile = fopen("claus.c", "r");
+    FILE* convFile = fopen("claus_conv.h", "w+");
     char lineBuffer[BUFF_SIZE];
     char colBuffer[8];
-    uint8_t charCount;
+    uint32_t charCount;
     uint32_t lineCount;
     int currentChar;
     fgets(lineBuffer, BUFF_SIZE, imgFile);
@@ -56,6 +56,8 @@ int main(void)
         fputs(lineBuffer, convFile);
         memset(lineBuffer, 0, sizeof(lineBuffer));
         fgets(lineBuffer, BUFF_SIZE, imgFile);
+        lineCount++;
+        printf("Line %d",lineCount);
     }
     // For rest of file
     while (feof(imgFile) == 0)

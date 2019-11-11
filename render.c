@@ -69,7 +69,7 @@ void PixBuffer_drawTexColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h
     for (int32_t i = 0; i < h; i++)
     {
         // Calculate pixel to draw from texture
-        uint32_t pix = (uint32_t)(texture->pixData[(uint32_t)(((double)(offY + i)/(double)offH)*(texture->tileHeight)) * texture->tileWidth + column]);
+        uint32_t pix = texture->pixData[(uint32_t)(((double)(offY + i)/(double)offH)*(texture->tileHeight)) * texture->tileWidth + column];
         int r = (int)(pix >> 3*8);
         int g = (int)((pix >> 2*8) & 0xFF);
         int b = (int)((pix >> 8) & 0xFF);

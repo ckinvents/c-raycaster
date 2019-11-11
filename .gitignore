@@ -2,4 +2,6 @@
 !*/
 !*.*
 box*.c
-.vscode/*
+spoder*.*
+claus*.*
+/.vscode/*

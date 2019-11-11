@@ -206,7 +206,8 @@ void RayEngine_texRaycastRender(PixBuffer* buffer, Player* player, uint32_t widt
 					double colorGrad = (depth) / player->dist;
 					double drawHeight = (double)(height / (depth * 10));
 					SDL_Color fadeColor = {77,150,154,255};
-					PixBuffer_drawTexColumn(buffer, i, (int)((double)height / 2.0 - drawHeight), (int)drawHeight*2, texData, texCoord, colorGrad, fadeColor);
+					double jumpHeight = 1;//2 + sin(SDL_GetTicks()/1000.0);
+					PixBuffer_drawTexColumn(buffer, i, (int)(((double)height / 2.0 - drawHeight)/jumpHeight + height * (1.0 - 1.0/jumpHeight)), (int)drawHeight*2, texData, texCoord, colorGrad, fadeColor);
 				}
 				else
 				{
