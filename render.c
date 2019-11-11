@@ -51,6 +51,38 @@ void PixBuffer_drawColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h, S
     }
 }
 
+void PixBuffer_drawTexColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h, RayTex* texture, uint32_t column, double fadePercent, SDL_Color targetColor)
+{
+    int32_t offH = h;
+    int32_t offY = 0;
+    if (y < 0)
+    {
+        offY = -y;
+        h = h + y;
+        y = 0;
+    }
+    if (y + h > buffer -> height)
+    {
+        h = buffer->height - y;
+    }
+    #pragma omp parallel for schedule(dynamic,1)
+    for (int32_t i = 0; i < h; i++)
+    {
+        // Calculate pixel to draw from texture
+        uint32_t pix = (uint32_t)(texture->pixData[(uint32_t)(((double)(offY + i)/(double)offH)*(texture->tileHeight)) * texture->tileWidth + column]);
+        int r = (int)(pix >> 3*8);
+        int g = (int)((pix >> 2*8) & 0xFF);
+        int b = (int)((pix >> 8) & 0xFF);
+        int dr = targetColor.r - r;
+        int dg = targetColor.g - g;
+        int db = targetColor.b - b;
+        r += (int)((double)dr * fadePercent);
+        g += (int)((double)dg * fadePercent);
+        b += (int)((double)db * fadePercent);
+        buffer->pixels[(i+y)*buffer->width+x] = getColor(r,g,b,0xff);
+    }
+}
+
 /**
  * @brief Draws a row to a pixel buffer
  * Note: drawRow <b>does not</b> check x <b>or</b>

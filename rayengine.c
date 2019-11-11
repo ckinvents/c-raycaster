@@ -13,7 +13,7 @@
 #include "rayengine.h"
 
 const uint8_t* keys;
-double getInterDist(double dx, double dy, double xi, double yi, double coordX, double coordY);
+double getInterDist(double dx, double dy, double xi, double yi, double coordX, double coordY, double* newX, double* newY, uint8_t* side);
 
 void RayEngine_generateMap(Map* newMap, unsigned char* charList, int width, int height, int border, SDL_Color* colorData, int numColor)
 {
@@ -117,7 +117,8 @@ void RayEngine_raycastRender(PixBuffer* buffer,  Player* player, uint32_t width,
 				{
 					double newX;
 					double newY;
-					double rayLen = sqrt(getInterDist(rayStepX, rayStepY, player->x + rayOffX, player->y + rayOffY, (double)coordX, (double)coordY))/scaleFactor;
+					uint8_t side;
+					double rayLen = sqrt(getInterDist(rayStepX, rayStepY, player->x + rayOffX, player->y + rayOffY, (double)coordX, (double)coordY, &newX, &newY, &side))/scaleFactor;
 					double depth = (double)(rayLen * cos(rayAngle - player->angle));
 					double colorGrad = (player->dist - depth) / player->dist;
 					if (colorGrad < 0 || colorGrad > 1)
@@ -174,6 +175,7 @@ void RayEngine_texRaycastRender(PixBuffer* buffer, Player* player, uint32_t widt
 		double rayY = player->y;
 		double rayStepX = (resolution) * cos(rayAngle);
 		double rayStepY = (resolution) * sin(rayAngle);
+		double stepLen = (resolution) / scaleFactor;
 		long double rayLen = 0;
 		int rayStep = 0;
 		int rayOffX = 0;
@@ -184,18 +186,27 @@ void RayEngine_texRaycastRender(PixBuffer* buffer, Player* player, uint32_t widt
 			int coordY = (int)floor(rayY+rayOffY);
 			if ((coordX >= 0.0 && coordY >= 0.0) && (coordX < map->width && coordY < map->height) && (map->data[coordY * map->width + coordX] != 0))
 			{
-				SDL_Color colorDat = map->colorData[map->data[coordY * map->width + coordX] - 1];
+				SDL_Color colorDat = {0,0,0,255};
 				if (rayLen != 0)
 				{
-					double depth = (double)(rayLen * cos(rayAngle - player->angle));
-					double colorGrad = (player->dist - depth) / player->dist;
-					if (colorGrad < 0 || colorGrad > 1)
+					uint8_t side;
+					double newX;
+					double newY;
+					double rayLen = sqrt(getInterDist(rayStepX, rayStepY, player->x + rayOffX, player->y + rayOffY, (double)coordX, (double)coordY, &newX, &newY, &side))/scaleFactor;
+					uint32_t texCoord;
+					if (side)
 					{
-						colorGrad = 0;
+						texCoord = (uint32_t)floor((newX - coordX) * texData->tileWidth);
 					}
-					SDL_Color columnColor = {(int)((double)colorDat.r * (colorGrad)), (int)((double)colorDat.g * (colorGrad)), (int)((double)colorDat.b * (colorGrad)), 0xFF};
+					else
+					{
+						texCoord = (uint32_t)floor((newY - coordY) * texData->tileWidth);
+					}
+					double depth = (double)(rayLen * cos(rayAngle - player->angle));
+					double colorGrad = (depth) / player->dist;
 					double drawHeight = (double)(height / (depth * 10));
-					PixBuffer_drawColumn(buffer, i, (int)((double)height / 2.0 - drawHeight), drawHeight*2, columnColor);
+					SDL_Color fadeColor = {77,150,154,255};
+					PixBuffer_drawTexColumn(buffer, i, (int)((double)height / 2.0 - drawHeight), (int)drawHeight*2, texData, texCoord, colorGrad, fadeColor);
 				}
 				else
 				{
@@ -222,12 +233,12 @@ void RayEngine_texRaycastRender(PixBuffer* buffer, Player* player, uint32_t widt
 				rayOffY -= map->height + map->border*2;
 			}
 			rayStep++;
-			rayLen += resolution;
+			rayLen += stepLen;
 		}
 	}
 }
 
-double getInterDist(double dx, double dy, double xi, double yi, double coordX, double coordY)
+double getInterDist(double dx, double dy, double xi, double yi, double coordX, double coordY, double* newX, double* newY, uint8_t* side)
 {
 	// Check side intercepts first
 	double slope = (dy/dx);
@@ -242,21 +253,33 @@ double getInterDist(double dx, double dy, double xi, double yi, double coordX, d
 	if ((int)floor(leftCoord) == (int)coordY)
 	{
 		minDist = (xi - coordX)*(xi - coordX) + (yi - leftCoord)*(yi - leftCoord);
+		*side = 0;
+		*newX = coordX;
+		*newY = leftCoord;
 	}
 	dist = (coordX + 1 - xi)*(coordX + 1 - xi) + (rightCoord - yi)*(rightCoord - yi);
 	if ((int)floor(rightCoord) == (int)coordY && (dist < minDist || minDist == -1))
 	{
 		minDist = dist;
+		*side = 0;
+		*newX = coordX + 1;
+		*newY = rightCoord;
 	}
 	dist = (xi - topCoord)*(xi - topCoord) + (yi - coordY)*(yi - coordY);
 	if ((int)floor(topCoord) == (int)coordX && (dist < minDist || minDist == -1))
 	{
 		minDist = dist;
+		*side = 1;
+		*newX = topCoord;
+		*newY = coordY;
 	}
 	dist = (xi - bottomCoord)*(xi - bottomCoord) + (yi - coordY - 1)*(yi - coordY - 1);
 	if ((int)floor(bottomCoord) == (int)coordX && (dist < minDist || minDist == -1))
 	{
 		minDist = dist;
+		*side = 1;
+		*newX = bottomCoord;
+		*newY = coordY + 1;
 	}
 	return minDist;
 }
@@ -267,8 +290,8 @@ void RayEngine_updatePlayer(Player* player, Map* map, double dt)
 	keys = SDL_GetKeyboardState(NULL);
 	if (keys[SDL_SCANCODE_W]||keys[SDL_SCANCODE_S])
 	{
-		double dx = 2 * dt * cos(player->angle) / (4 - keys[SDL_SCANCODE_LSHIFT] * 3);
-		double dy = 2 * dt * sin(player->angle) / (4 - keys[SDL_SCANCODE_LSHIFT] * 3);
+		double dx = 2 * dt * cos(player->angle) / (2 - keys[SDL_SCANCODE_LSHIFT] * 1);
+		double dy = 2 * dt * sin(player->angle) / (2 - keys[SDL_SCANCODE_LSHIFT] * 1);
 		int oldX = (int)floor(player->x);
 		int oldY = (int)floor(player->y);
 		int newX;

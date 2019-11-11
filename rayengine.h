@@ -22,13 +22,6 @@ typedef struct _Map {
 	int border;
 } Map;
 
-typedef struct _RayTex {
-	uint32_t* pixData;
-	uint32_t tileWidth;
-	uint32_t tileHeight;
-	uint8_t tileCount;
-} RayTex;
-
 void RayEngine_generateMap(Map* newMap, unsigned char* charList, int width, int height, int border, SDL_Color* colorData, int numColor);
 void RayEngine_drawMinimap(PixBuffer* buffer, Player* player, unsigned int width, unsigned int height, Map* map, int blockSize);
 void RayEngine_deleteMap(unsigned char** map, int width, int height);

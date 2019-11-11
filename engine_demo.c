@@ -178,6 +178,12 @@ int main(int argc, char* argv[])
 	mapBuffer.width = WIDTH;
 	mapBuffer.height = HEIGHT;
 
+	RayTex boxTex;
+	boxTex.pixData = box_data;
+	boxTex.tileCount = 1;
+	boxTex.tileHeight = 16;
+	boxTex.tileWidth = 16;
+
 	double angleValues[WIDTH];
 	Player* testPlayer = malloc(sizeof(Player));
 	if (testPlayer)
@@ -207,13 +213,13 @@ int main(int argc, char* argv[])
 	// Generate background texture
 	SDL_Texture* gradientTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STATIC, WIDTH, HEIGHT);
 	SDL_Rect gradientRectTop = {0,0,WIDTH,HEIGHT/2};
-	SDL_Color colorTop1 = {255,100,100,255};
-	SDL_Color colorTop2 = {0,0,100,255};
+	SDL_Color colorTop1 = {189,255,255,255};//{255,100,100,255};
+	SDL_Color colorTop2 = {77,150,154,255};//{0,0,100,255};
 	// SDL_Color colorTop1 = {0x5c,0x57,0xff,255};
 	// SDL_Color colorTop2 = {0xff,0xff,0xff,255};
 	SDL_Rect gradientRectBottom = {0,HEIGHT/2,WIDTH,HEIGHT/2};
-	SDL_Color colorBottom1 = {120,120,120,255};
-	SDL_Color colorBottom2 = {190,190,190,255};
+	SDL_Color colorBottom1 = {159,197,182,255};//{50,50,100,255};
+	SDL_Color colorBottom2 = {79,172,135,255};//{190,190,190,255};
 	PixBuffer_clearBuffer(&buffer);
 	PixBuffer_drawHorizGradient(&buffer,&gradientRectTop, colorTop1, colorTop2);
 	PixBuffer_drawHorizGradient(&buffer,&gradientRectBottom, colorBottom1, colorBottom2);
@@ -241,7 +247,8 @@ int main(int argc, char* argv[])
 		SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
 		SDL_RenderCopy(renderer,gradientTexture,NULL,NULL);
 		PixBuffer_clearBuffer(&buffer);
-		RayEngine_raycastRender(&buffer, testPlayer, WIDTH, HEIGHT, &testMap, 0.01);
+		//RayEngine_raycastRender(&buffer, testPlayer, WIDTH, HEIGHT, &testMap, 0.01);
+		RayEngine_texRaycastRender(&buffer, testPlayer, WIDTH, HEIGHT, &testMap, 0.01, &boxTex);
 		PixBuffer_orderDither256(&buffer, 5);
 		// Note: between 4 & 10 is good for 16 color palette
 		SDL_UpdateTexture(drawTex, NULL, buffer.pixels, sizeof(uint32_t) * WIDTH);
