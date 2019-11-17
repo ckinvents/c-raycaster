@@ -5,7 +5,7 @@
 #include "rayengine.h"
 #include "render.h"
 
-const unsigned int SCALE = 4;
+#define SCALE 4
 const unsigned int WIDTH = 1000/SCALE;
 const unsigned int HEIGHT = 800/SCALE;
 #define MAP_SCALE 1
