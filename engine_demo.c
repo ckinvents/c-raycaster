@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "rayengine.h"
-#include "render.h"
+#include "pixrender.h"
 
 #define SCALE 4
 const unsigned int WIDTH = 1000/SCALE;

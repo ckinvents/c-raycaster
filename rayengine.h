@@ -2,7 +2,7 @@
 #define RAYENGINE_H
 
 #include <SDL2/SDL.h>
-#include "render.h"
+#include "pixrender.h"
 
 typedef struct _Player {
 	double x;

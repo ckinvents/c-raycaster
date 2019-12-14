@@ -8,7 +8,7 @@
  */
 
 #include <omp.h>
-#include "render.h"
+#include "pixrender.h"
 
 uint32_t getColor(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
