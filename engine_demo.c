@@ -197,6 +197,13 @@ int main(int argc, char* argv[])
 	}
 	RayEngine_generateAngleValues(WIDTH,testPlayer);
 
+	// Allocate depth buffer 
+	RayBuffer rayBuffer[WIDTH];
+	for (int i = 0; i < WIDTH; i++)
+	{
+		rayBuffer[i].numLayers = 0;
+	}
+
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 	SDL_RenderSetScale(renderer, SCALE, SCALE);
 	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
@@ -248,7 +255,9 @@ int main(int argc, char* argv[])
 		SDL_RenderCopy(renderer,gradientTexture,NULL,NULL);
 		PixBuffer_clearBuffer(&buffer);
 		//RayEngine_raycastRender(&buffer, testPlayer, WIDTH, HEIGHT, &testMap, 0.01);
-		RayEngine_texRaycastRender(&buffer, testPlayer, WIDTH, HEIGHT, &testMap, 0.01, &boxTex);
+		RayEngine_raycastCompute(rayBuffer, testPlayer, WIDTH, HEIGHT, &testMap, 0.01, &boxTex);
+		RayEngine_raySpriteCompute(rayBuffer, testPlayer, WIDTH, HEIGHT, 0.01, sprite)
+		RayEngine_texRaycastRender(&buffer, WIDTH, HEIGHT, rayBuffer, testPlayer->dist);
 		PixBuffer_orderDither256(&buffer, 5);
 		// Note: between 4 & 10 is good for 16 color palette
 		SDL_UpdateTexture(drawTex, NULL, buffer.pixels, sizeof(uint32_t) * WIDTH);

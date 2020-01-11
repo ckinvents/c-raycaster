@@ -85,6 +85,146 @@ void RayEngine_generateAngleValues(uint32_t width, Player* player)
 	}
 }
 
+// Compare function for qsort
+int raycastCompare(void *buffer1, void *buffer2)
+{
+	return (((RayColumn*)buffer2)->depth - ((RayColumn*)buffer1)->depth);
+}
+
+
+void RayEngine_raySpriteCompute(RayBuffer* rayBuffer, Player* player, uint32_t width, uint32_t height, double resolution, RaySprite* spriteList, uint8_t numSprites)
+{
+	// Establish starting angle and sweep per column
+	double startAngle = player->angle - player->fov / 2.0;
+	double adjFactor = width / (2 * tan(player->fov / 2));
+	double scaleFactor = (double)width / (double)height * 2.4;
+	// Iterate through sprite list and render to buffer
+	for (uint8_t s = 0; s < numSprites; s++)
+	{
+		double spriteAngle = atan2(spriteList[s].y, spriteList[s].x);
+		double spriteDist = cos(spriteAngle - player->angle) * sqrt((player->x - spriteList[s].x)*(player->x - spriteList[s].x) + (player->y - spriteList[s].y)*(player->y - spriteList[s].y));
+		// Depth check, can't be on or behind player
+		if (spriteDist > 0)
+		{
+			double screenAngle = spriteAngle - startAngle;
+			double minAngleDif = (player->angleValues[0] - screenAngle)*(player->angleValues[0] - screenAngle);
+			uint32_t centerX = 0;
+			// Get closest angle to identify screen coordinates
+			for (uint32_t i = 1; i < width; i++)
+			{
+				double newAngleDif = (player->angleValues[i] - screenAngle)*(player->angleValues[i] - screenAngle);
+				if (newAngleDif < minAngleDif)
+				{
+					centerX = i;
+					minAngleDif = newAngleDif;
+				}
+			}
+			// Get width and height
+			int32_t screenHeight = (int32_t)(double)height / (spriteDist * 10) * spriteList[s].scaleFactor;
+			int32_t screenWidth = (int32_t)((double)screenHeight * ((double)spriteList[s].texture->tileWidth / (double)spriteList[s].texture->tileHeight));
+			int32_t startX = centerX - screenWidth / 2;
+			int32_t endX = startX + screenWidth;
+			int32_t startY = (height / 2) - (screenHeight / 2);
+			// Write to buffer if in fulcrum
+			if (startX <= width && endX >= 0)
+			{
+				
+			}
+		}
+	}
+}
+
+void RayEngine_raycastCompute(RayBuffer* rayBuffer, Player* player, uint32_t width, uint32_t height, Map* map, double resolution, RayTex* texData)
+{
+	// Establish starting angle and sweep per column
+	double startAngle = player->angle - player->fov / 2.0;
+	double adjFactor = width / (2 * tan(player->fov / 2));
+	double scaleFactor = (double)width / (double)height * 2.4;
+	double rayAngle = startAngle;
+	// Sweeeeep for each column
+	#pragma omp parallel for schedule(dynamic,1) private(rayAngle)
+	for (int i = 0; i < width; i++)
+	{
+		rayAngle = startAngle + player->angleValues[i];
+		double rayX = player->x;
+		double rayY = player->y;
+		double rayStepX = (resolution) * cos(rayAngle);
+		double rayStepY = (resolution) * sin(rayAngle);
+		double stepLen = (resolution) / scaleFactor;
+		long double rayLen = 0;
+		int rayStep = 0;
+		int rayOffX = 0;
+		int rayOffY = 0;
+		while (rayLen < player->dist)
+		{
+			int coordX = (int)floor(rayX+rayOffX);
+			int coordY = (int)floor(rayY+rayOffY);
+			if ((coordX >= 0.0 && coordY >= 0.0) && (coordX < map->width && coordY < map->height) && (map->data[coordY * map->width + coordX] != 0))
+			{
+				SDL_Color colorDat = {0,0,0,255};
+				if (rayLen != 0)
+				{
+					uint8_t side;
+					double newX;
+					double newY;
+					double rayLen = sqrt(getInterDist(rayStepX, rayStepY, player->x + rayOffX, player->y + rayOffY, (double)coordX, (double)coordY, &newX, &newY, &side))/scaleFactor;
+					uint32_t texCoord;
+					if (side)
+					{
+						texCoord = (uint32_t)floor((newX - coordX) * texData->tileWidth);
+					}
+					else
+					{
+						texCoord = (uint32_t)floor((newY - coordY) * texData->tileWidth);
+					}
+					double depth = (double)(rayLen * cos(rayAngle - player->angle));
+					double colorGrad = (depth) / player->dist;
+					double drawHeight = (double)(height / (depth * 10));
+					SDL_Color fadeColor = {77,150,154,255};
+					double jumpHeight = 1;//2 + sin(SDL_GetTicks()/1000.0);
+					//PixBuffer_drawTexColumn(buffer, i, (int)(((double)height / 2.0 - drawHeight)/jumpHeight + height * (1.0 - 1.0/jumpHeight)), (int)drawHeight*2, texData, texCoord, colorGrad, fadeColor);
+					rayBuffer[i].layers[rayBuffer[i].numLayers].texture = texData;
+					rayBuffer[i].layers[rayBuffer[i].numLayers].texCoord = texCoord;
+					rayBuffer[i].layers[rayBuffer[i].numLayers].depth = depth;
+					rayBuffer[i].layers[rayBuffer[i].numLayers].yCoord = (int32_t)(((double)height / 2.0 - drawHeight)/jumpHeight + height * (1.0 - 1.0/jumpHeight));
+					rayBuffer[i].layers[rayBuffer[i].numLayers].height = (int32_t)drawHeight*2;
+				}
+				else //Player is in column
+				{
+					//PixBuffer_drawColumn(buffer, i, 0, height, colorDat);
+					rayBuffer[i].layers[rayBuffer[i].numLayers].texture = NULL;
+					rayBuffer[i].layers[rayBuffer[i].numLayers].texCoord = 0;
+					rayBuffer[i].layers[rayBuffer[i].numLayers].depth = 0;
+					rayBuffer[i].layers[rayBuffer[i].numLayers].yCoord = 0;
+					rayBuffer[i].layers[rayBuffer[i].numLayers].height = 0;
+				}
+				rayBuffer[i].numLayers++;
+				break;
+			}
+			rayX += rayStepX;
+			rayY += rayStepY;
+			if (rayX+rayOffX < -map->border)
+			{
+				rayOffX += map->width + map->border * 2;
+			}
+			else if (rayX+rayOffX >= map->width + map->border)
+			{
+				rayOffX -= map->width + map->border * 2;
+			}
+			if (rayY+rayOffY < -map->border)
+			{
+				rayOffY += map->height + map->border*2;
+			}
+			else if (rayY+rayOffY >= map->height + map->border)
+			{
+				rayOffY -= map->height + map->border*2;
+			}
+			rayStep++;
+			rayLen += stepLen;
+		}
+	}
+}
+
 void RayEngine_raycastRender(PixBuffer* buffer,  Player* player, uint32_t width, uint32_t height, Map* map, double resolution)
 {
 	// Establish starting angle and sweep per column
@@ -159,83 +299,30 @@ void RayEngine_raycastRender(PixBuffer* buffer,  Player* player, uint32_t width,
 	}
 }
 
-void RayEngine_texRaycastRender(PixBuffer* buffer, Player* player, uint32_t width, uint32_t height, Map* map, double resolution, RayTex* texData)
+void RayEngine_texRaycastRender(PixBuffer* buffer, uint32_t width, uint32_t height, RayBuffer* rayBuffer, double renderDepth)
 {
-	// Establish starting angle and sweep per column
-	double startAngle = player->angle - player->fov / 2.0;
-	double adjFactor = width / (2 * tan(player->fov / 2));
-	double scaleFactor = (double)width / (double)height * 2.4;
-	double rayAngle = startAngle;
-	// Sweeeeep for each column
-	#pragma omp parallel for schedule(dynamic,1) private(rayAngle)
+	SDL_Color fadeColor = {77,150,154,255};
+	SDL_Color colorDat = {0,0,0,255};
+	// For each screenwidth column
 	for (int i = 0; i < width; i++)
 	{
-		rayAngle = startAngle + player->angleValues[i];
-		double rayX = player->x;
-		double rayY = player->y;
-		double rayStepX = (resolution) * cos(rayAngle);
-		double rayStepY = (resolution) * sin(rayAngle);
-		double stepLen = (resolution) / scaleFactor;
-		long double rayLen = 0;
-		int rayStep = 0;
-		int rayOffX = 0;
-		int rayOffY = 0;
-		while (rayLen < player->dist)
+		// Sort ray depth values
+		// (Furthest to closest, draw-order)
+		qsort(rayBuffer[i].layers, rayBuffer[i].numLayers, sizeof(RayColumn), raycastCompare);
+		// for every column in buffer...
+		if (!rayBuffer[i].layers[0].texture)
 		{
-			int coordX = (int)floor(rayX+rayOffX);
-			int coordY = (int)floor(rayY+rayOffY);
-			if ((coordX >= 0.0 && coordY >= 0.0) && (coordX < map->width && coordY < map->height) && (map->data[coordY * map->width + coordX] != 0))
-			{
-				SDL_Color colorDat = {0,0,0,255};
-				if (rayLen != 0)
-				{
-					uint8_t side;
-					double newX;
-					double newY;
-					double rayLen = sqrt(getInterDist(rayStepX, rayStepY, player->x + rayOffX, player->y + rayOffY, (double)coordX, (double)coordY, &newX, &newY, &side))/scaleFactor;
-					uint32_t texCoord;
-					if (side)
-					{
-						texCoord = (uint32_t)floor((newX - coordX) * texData->tileWidth);
-					}
-					else
-					{
-						texCoord = (uint32_t)floor((newY - coordY) * texData->tileWidth);
-					}
-					double depth = (double)(rayLen * cos(rayAngle - player->angle));
-					double colorGrad = (depth) / player->dist;
-					double drawHeight = (double)(height / (depth * 10));
-					SDL_Color fadeColor = {77,150,154,255};
-					double jumpHeight = 1;//2 + sin(SDL_GetTicks()/1000.0);
-					PixBuffer_drawTexColumn(buffer, i, (int)(((double)height / 2.0 - drawHeight)/jumpHeight + height * (1.0 - 1.0/jumpHeight)), (int)drawHeight*2, texData, texCoord, colorGrad, fadeColor);
-				}
-				else
-				{
-					PixBuffer_drawColumn(buffer, i, 0, height, colorDat);
-				}
-				break;
-			}
-			rayX += rayStepX;
-			rayY += rayStepY;
-			if (rayX+rayOffX < -map->border)
-			{
-				rayOffX += map->width + map->border * 2;
-			}
-			else if (rayX+rayOffX >= map->width + map->border)
-			{
-				rayOffX -= map->width + map->border * 2;
-			}
-			if (rayY+rayOffY < -map->border)
-			{
-				rayOffY += map->height + map->border*2;
-			}
-			else if (rayY+rayOffY >= map->height + map->border)
-			{
-				rayOffY -= map->height + map->border*2;
-			}
-			rayStep++;
-			rayLen += stepLen;
+			PixBuffer_drawColumn(buffer, i, 0, height, colorDat);
 		}
+		else
+		{
+			for (int j = 0; j < rayBuffer[i].numLayers; j++)
+			{
+				double colorGrad = (rayBuffer[i].layers[j].depth) / renderDepth;
+				PixBuffer_drawTexColumn(buffer, i, rayBuffer[i].layers[j].yCoord, rayBuffer[i].layers[j].height, rayBuffer[i].layers[j].texture, rayBuffer[i].layers[j].texCoord, colorGrad, fadeColor);
+			}
+		}
+		rayBuffer[i].numLayers = 0;
 	}
 }
 
