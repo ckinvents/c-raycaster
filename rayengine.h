@@ -40,12 +40,6 @@ typedef struct _RaySprite {
 	double scaleFactor;
 	double x;
 	double y;
-	double screenAngle;
-	double screenScale;
-	uint32_t screenX;
-	uint32_t screenY;
-	uint32_t screenWidth;
-	uint32_t screenHeignt;
 } RaySprite;
 
 void RayEngine_generateMap(Map* newMap, unsigned char* charList, int width, int height, int border, SDL_Color* colorData, int numColor);

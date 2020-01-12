@@ -169,7 +169,7 @@ int main(int argc, char* argv[])
 	int palletteColorNum = 16;
 
 
-
+	//Demo map
 	Map testMap;
 	RayEngine_generateMap(&testMap, testMapChar, MAP_WIDTH, MAP_HEIGHT, 2, colorKey, 4);
 	uint32_t mapPixels[WIDTH*HEIGHT];
@@ -178,12 +178,14 @@ int main(int argc, char* argv[])
 	mapBuffer.width = WIDTH;
 	mapBuffer.height = HEIGHT;
 
+	// Demo texture
 	RayTex boxTex;
 	boxTex.pixData = box_data;
 	boxTex.tileCount = 1;
 	boxTex.tileHeight = 16;
 	boxTex.tileWidth = 16;
 
+	// Demo player
 	double angleValues[WIDTH];
 	Player* testPlayer = malloc(sizeof(Player));
 	if (testPlayer)
@@ -197,6 +199,14 @@ int main(int argc, char* argv[])
 	}
 	RayEngine_generateAngleValues(WIDTH,testPlayer);
 
+	// Demo spritelist with sprite
+	RaySprite spriteList[1];
+	uint8_t spriteListLength = 1;
+	spriteList[0].x = 7.5;
+	spriteList[0].y = 2.5;
+	spriteList[0].scaleFactor = 1.0;
+	spriteList[0].texture = &boxTex;
+
 	// Allocate depth buffer 
 	RayBuffer rayBuffer[WIDTH];
 	for (int i = 0; i < WIDTH; i++)
@@ -204,10 +214,12 @@ int main(int argc, char* argv[])
 		rayBuffer[i].numLayers = 0;
 	}
 
+	// SDL renderer initialization
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 	SDL_RenderSetScale(renderer, SCALE, SCALE);
 	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
+	// Pixbuffer initialization
 	drawTex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, WIDTH, HEIGHT);
 	SDL_SetTextureBlendMode(drawTex, SDL_BLENDMODE_BLEND);
 	uint32_t pixels[WIDTH * HEIGHT];
@@ -256,7 +268,7 @@ int main(int argc, char* argv[])
 		PixBuffer_clearBuffer(&buffer);
 		//RayEngine_raycastRender(&buffer, testPlayer, WIDTH, HEIGHT, &testMap, 0.01);
 		RayEngine_raycastCompute(rayBuffer, testPlayer, WIDTH, HEIGHT, &testMap, 0.01, &boxTex);
-		RayEngine_raySpriteCompute(rayBuffer, testPlayer, WIDTH, HEIGHT, 0.01, sprite)
+		RayEngine_raySpriteCompute(rayBuffer, testPlayer, WIDTH, HEIGHT, 0.01, spriteList, spriteListLength);
 		RayEngine_texRaycastRender(&buffer, WIDTH, HEIGHT, rayBuffer, testPlayer->dist);
 		PixBuffer_orderDither256(&buffer, 5);
 		// Note: between 4 & 10 is good for 16 color palette

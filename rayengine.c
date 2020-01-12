@@ -128,7 +128,23 @@ void RayEngine_raySpriteCompute(RayBuffer* rayBuffer, Player* player, uint32_t w
 			// Write to buffer if in fulcrum
 			if (startX <= width && endX >= 0)
 			{
-				
+				// Iterate through screen columns
+				uint32_t spriteColumn = 0;
+				uint32_t texCoord;
+				for (int i = startX; i < endX; i++)
+				{
+					if (i >= 0 && i < width && rayBuffer[i].numLayers < 255)
+					{
+						texCoord = (uint32_t)floor(((double)spriteColumn / (double)screenWidth) * spriteList[s].texture->tileWidth);
+						rayBuffer[i].layers[rayBuffer[i].numLayers].texture = spriteList[s].texture;
+						rayBuffer[i].layers[rayBuffer[i].numLayers].texCoord = texCoord;
+						rayBuffer[i].layers[rayBuffer[i].numLayers].depth = spriteDist;
+						rayBuffer[i].layers[rayBuffer[i].numLayers].yCoord = startY;
+						rayBuffer[i].layers[rayBuffer[i].numLayers].height = screenHeight;
+						rayBuffer[i].numLayers++;
+					}
+					spriteColumn++;
+				}
 			}
 		}
 	}
@@ -432,5 +448,13 @@ void RayEngine_updatePlayer(Player* player, Map* map, double dt)
 	else if (keys[SDL_SCANCODE_D])
 	{
 		player->angle += dt;
+	}
+	if (player->angle >= (2 * M_PI))
+	{
+		player->angle -= (2 * M_PI);
+	}
+	else if (player->angle < 0)
+	{
+		player->angle += (2 * M_PI);
 	}
 }
