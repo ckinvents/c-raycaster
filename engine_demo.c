@@ -200,12 +200,17 @@ int main(int argc, char* argv[])
 	RayEngine_generateAngleValues(WIDTH,testPlayer);
 
 	// Demo spritelist with sprite
-	RaySprite spriteList[1];
-	uint8_t spriteListLength = 1;
+	RaySprite spriteList[2];
+	uint8_t spriteListLength = 2;
 	spriteList[0].x = 7.5;
 	spriteList[0].y = 2.5;
 	spriteList[0].scaleFactor = 1.0;
 	spriteList[0].texture = &boxTex;
+	spriteList[1].x = 6.5;
+	spriteList[1].y = 1.5;
+	spriteList[1].scaleFactor = 5.0;
+	spriteList[1].texture = &boxTex;
+	
 
 	// Allocate depth buffer 
 	RayBuffer rayBuffer[WIDTH];
@@ -259,6 +264,11 @@ int main(int argc, char* argv[])
 			}
 		}
 		RayEngine_updatePlayer(testPlayer,&testMap,dt);
+
+		// DEBUG PLAYER VALUES
+		double playerStartAngle = testPlayer->angle - testPlayer->fov / 2.0;
+		double playerEndAngle = testPlayer->angle + testPlayer->fov / 2.0;
+		double sprite1Angle = atan2(spriteList[0].y - testPlayer->y, spriteList[0].x - testPlayer->x);
 
 		// Clear, draw line and update
 		SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);

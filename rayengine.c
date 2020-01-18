@@ -96,12 +96,12 @@ void RayEngine_raySpriteCompute(RayBuffer* rayBuffer, Player* player, uint32_t w
 {
 	// Establish starting angle and sweep per column
 	double startAngle = player->angle - player->fov / 2.0;
-	double adjFactor = width / (2 * tan(player->fov / 2));
-	double scaleFactor = (double)width / (double)height * 2.4;
+	//double adjFactor = width / (2 * tan(player->fov / 2));
+	//double scaleFactor = (double)width / (double)height * 2.4;
 	// Iterate through sprite list and render to buffer
 	for (uint8_t s = 0; s < numSprites; s++)
 	{
-		double spriteAngle = atan2(spriteList[s].y, spriteList[s].x);
+		double spriteAngle = atan2(spriteList[s].y - player->y, spriteList[s].x - player->x);
 		double spriteDist = cos(spriteAngle - player->angle) * sqrt((player->x - spriteList[s].x)*(player->x - spriteList[s].x) + (player->y - spriteList[s].y)*(player->y - spriteList[s].y));
 		// Depth check, can't be on or behind player
 		if (spriteDist > 0)
