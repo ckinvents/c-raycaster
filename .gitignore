@@ -1,8 +1,5 @@
 *
 !*/
 !*.*
-box*.c
-spoder*.*
-claus*.*
-*.png
 /.vscode/*
+/assets

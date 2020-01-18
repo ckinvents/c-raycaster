@@ -4,6 +4,7 @@
 #include <math.h>
 #include "rayengine.h"
 #include "pixrender.h"
+//#include "assets/asset_list.h"
 
 #define SCALE 4
 const unsigned int WIDTH = 1000/SCALE;
@@ -39,8 +40,8 @@ int main(int argc, char* argv[])
 
 	unsigned char testMapChar[MAP_WIDTH*MAP_HEIGHT] = {
 		2,2,2,2,2,3,3,3,3,3,
-		2,0,0,0,2,3,0,0,0,3,
-		2,0,1,0,2,3,0,0,0,3,
+		2,0,0,0,2,2,0,0,0,3,
+		2,0,1,0,2,2,0,0,0,3,
 		2,0,0,0,0,0,0,0,0,3,
 		2,2,2,2,2,3,3,0,3,3,
 		2,0,0,0,0,0,4,0,4,0,
@@ -185,6 +186,38 @@ int main(int argc, char* argv[])
 	boxTex.tileHeight = 16;
 	boxTex.tileWidth = 16;
 
+	// Initialize sprite assets
+	// RayTex spriteTexs[7];
+	// spriteTexs[0].pixData = cono_data;
+	// spriteTexs[0].tileCount = 1;
+	// spriteTexs[0].tileHeight = 128;
+	// spriteTexs[0].tileWidth = 128;
+	// spriteTexs[1].pixData = droptips_data;
+	// spriteTexs[1].tileCount = 1;
+	// spriteTexs[1].tileHeight = 128;
+	// spriteTexs[1].tileWidth = 128;
+	// spriteTexs[2].pixData = keule_data;
+	// spriteTexs[2].tileCount = 1;
+	// spriteTexs[2].tileHeight = 128;
+	// spriteTexs[2].tileWidth = 105;
+	// spriteTexs[3].pixData = lors_data;
+	// spriteTexs[3].tileCount = 1;
+	// spriteTexs[3].tileHeight = 128;
+	// spriteTexs[3].tileWidth = 122;
+	// spriteTexs[4].pixData = spaaace_data;
+	// spriteTexs[4].tileCount = 1;
+	// spriteTexs[4].tileHeight = 122;
+	// spriteTexs[4].tileWidth = 128;
+	// spriteTexs[5].pixData = thonking_data;
+	// spriteTexs[5].tileCount = 1;
+	// spriteTexs[5].tileHeight = 121;
+	// spriteTexs[5].tileWidth = 128;
+	// spriteTexs[6].pixData = udxs_data;
+	// spriteTexs[6].tileCount = 1;
+	// spriteTexs[6].tileHeight = 128;
+	// spriteTexs[6].tileWidth = 120;
+
+
 	// Demo player
 	double angleValues[WIDTH];
 	Player* testPlayer = malloc(sizeof(Player));
@@ -200,17 +233,28 @@ int main(int argc, char* argv[])
 	RayEngine_generateAngleValues(WIDTH,testPlayer);
 
 	// Demo spritelist with sprite
-	RaySprite spriteList[2];
-	uint8_t spriteListLength = 2;
-	spriteList[0].x = 7.5;
-	spriteList[0].y = 2.5;
+	RaySprite spriteList[5];
+	uint8_t spriteListLength = 5;
+	spriteList[0].x = 6.5;
+	spriteList[0].y = 1.5;
 	spriteList[0].scaleFactor = 1.0;
-	spriteList[0].texture = &boxTex;
-	spriteList[1].x = 6.5;
+	spriteList[0].texture = &boxTex;//&spriteTexs[0];
+	spriteList[1].x = 8.5;
 	spriteList[1].y = 1.5;
-	spriteList[1].scaleFactor = 5.0;
-	spriteList[1].texture = &boxTex;
-	
+	spriteList[1].scaleFactor = 1.0;
+	spriteList[1].texture = &boxTex;//&spriteTexs[2];
+	spriteList[2].x = 7.5;
+	spriteList[2].y = 2.5;
+	spriteList[2].scaleFactor = 1.0;
+	spriteList[2].texture = &boxTex;//&spriteTexs[4];
+	spriteList[3].x = 6.5;
+	spriteList[3].y = 3.5;
+	spriteList[3].scaleFactor = 1.0;
+	spriteList[3].texture = &boxTex;//&spriteTexs[3];
+	spriteList[4].x = 8.5;
+	spriteList[4].y = 3.5;
+	spriteList[4].scaleFactor = 1.0;
+	spriteList[4].texture = &boxTex;//&spriteTexs[6];	
 
 	// Allocate depth buffer 
 	RayBuffer rayBuffer[WIDTH];

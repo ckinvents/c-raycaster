@@ -73,13 +73,17 @@ void PixBuffer_drawTexColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h
         int r = (int)(pix >> 3*8);
         int g = (int)((pix >> 2*8) & 0xFF);
         int b = (int)((pix >> 8) & 0xFF);
-        int dr = targetColor.r - r;
-        int dg = targetColor.g - g;
-        int db = targetColor.b - b;
-        r += (int)((double)dr * fadePercent);
-        g += (int)((double)dg * fadePercent);
-        b += (int)((double)db * fadePercent);
-        buffer->pixels[(i+y)*buffer->width+x] = getColor(r,g,b,0xff);
+        int a = (int)(pix & 0xFF);
+        if (a) // Basic transparency, ignore fully transparent pixels
+        {
+            int dr = targetColor.r - r;
+            int dg = targetColor.g - g;
+            int db = targetColor.b - b;
+            r += (int)((double)dr * fadePercent);
+            g += (int)((double)dg * fadePercent);
+            b += (int)((double)db * fadePercent);
+            buffer->pixels[(i+y)*buffer->width+x] = getColor(r,g,b,0xff);
+        }
     }
 }
 

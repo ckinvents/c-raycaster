@@ -5,10 +5,20 @@
 
 #define BUFF_SIZE 6000
 
-int main(void)
+int main(int argc, char **argv)
 {
-    FILE* imgFile = fopen("claus.c", "r");
-    FILE* convFile = fopen("claus_conv.h", "w+");
+    if (argc < 3)
+    {
+        puts("Error: Not enough arguments. Please enter an input file name and output file name! Exiting...");
+        return 1;
+    }
+    FILE* imgFile = fopen(argv[1], "r");
+    if (!imgFile)
+    {
+        puts("Error: File not found! Exiting...");
+        return 1;
+    }
+    FILE* convFile = fopen(argv[2], "w+");
     char lineBuffer[BUFF_SIZE];
     char colBuffer[8];
     uint32_t charCount;
@@ -57,7 +67,7 @@ int main(void)
         memset(lineBuffer, 0, sizeof(lineBuffer));
         fgets(lineBuffer, BUFF_SIZE, imgFile);
         lineCount++;
-        printf("Line %d",lineCount);
+        //printf("Line %d",lineCount);
     }
     // For rest of file
     while (feof(imgFile) == 0)

@@ -88,7 +88,14 @@ void RayEngine_generateAngleValues(uint32_t width, Player* player)
 // Compare function for qsort
 int raycastCompare(void *buffer1, void *buffer2)
 {
-	return (((RayColumn*)buffer2)->depth - ((RayColumn*)buffer1)->depth);
+	if ((((RayColumn*)buffer2)->depth - ((RayColumn*)buffer1)->depth) < 0.0)
+	{
+		return -1;
+	}
+	else
+	{
+		return 1;
+	}
 }
 
 
@@ -97,28 +104,21 @@ void RayEngine_raySpriteCompute(RayBuffer* rayBuffer, Player* player, uint32_t w
 	// Establish starting angle and sweep per column
 	double startAngle = player->angle - player->fov / 2.0;
 	//double adjFactor = width / (2 * tan(player->fov / 2));
-	//double scaleFactor = (double)width / (double)height * 2.4;
+	double scaleFactor = (double)width / (double)height * 2.4;
+	//Generate screenspace angle mapping constant
+	const double angleMapConstant = (double)(width) / (2*tan(player->fov/2));
 	// Iterate through sprite list and render to buffer
 	for (uint8_t s = 0; s < numSprites; s++)
 	{
 		double spriteAngle = atan2(spriteList[s].y - player->y, spriteList[s].x - player->x);
-		double spriteDist = cos(spriteAngle - player->angle) * sqrt((player->x - spriteList[s].x)*(player->x - spriteList[s].x) + (player->y - spriteList[s].y)*(player->y - spriteList[s].y));
+		double screenAngle = spriteAngle - player->angle;
+		//printf("Sprite %d screen angle: %f\n", s, screenAngle);
+		double spriteDist = cos(screenAngle) * (sqrt((player->x - spriteList[s].x)*(player->x - spriteList[s].x) + (player->y - spriteList[s].y)*(player->y - spriteList[s].y))/scaleFactor);
 		// Depth check, can't be on or behind player
 		if (spriteDist > 0)
 		{
-			double screenAngle = spriteAngle - startAngle;
-			double minAngleDif = (player->angleValues[0] - screenAngle)*(player->angleValues[0] - screenAngle);
-			uint32_t centerX = 0;
-			// Get closest angle to identify screen coordinates
-			for (uint32_t i = 1; i < width; i++)
-			{
-				double newAngleDif = (player->angleValues[i] - screenAngle)*(player->angleValues[i] - screenAngle);
-				if (newAngleDif < minAngleDif)
-				{
-					centerX = i;
-					minAngleDif = newAngleDif;
-				}
-			}
+			// Compute column from screen angle
+			int32_t centerX = (int32_t)width / 2 + (int32_t)(angleMapConstant * tan(screenAngle));
 			// Get width and height
 			int32_t screenHeight = (int32_t)(double)height / (spriteDist * 10) * spriteList[s].scaleFactor;
 			int32_t screenWidth = (int32_t)((double)screenHeight * ((double)spriteList[s].texture->tileWidth / (double)spriteList[s].texture->tileHeight));
@@ -126,12 +126,12 @@ void RayEngine_raySpriteCompute(RayBuffer* rayBuffer, Player* player, uint32_t w
 			int32_t endX = startX + screenWidth;
 			int32_t startY = (height / 2) - (screenHeight / 2);
 			// Write to buffer if in fulcrum
-			if (startX <= width && endX >= 0)
+			if (startX <= (int32_t)width && endX >= 0)
 			{
 				// Iterate through screen columns
 				uint32_t spriteColumn = 0;
 				uint32_t texCoord;
-				for (int i = startX; i < endX; i++)
+				for (int32_t i = startX; i < endX; i++)
 				{
 					if (i >= 0 && i < width && rayBuffer[i].numLayers < 255)
 					{
