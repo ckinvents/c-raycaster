@@ -4,7 +4,7 @@
 #include <math.h>
 #include "rayengine.h"
 #include "pixrender.h"
-//#include "assets/asset_list.h"
+#include "assets/asset_list.h"
 
 #define SCALE 4
 const unsigned int WIDTH = 1000/SCALE;
@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
 	unsigned char testMapChar[MAP_WIDTH*MAP_HEIGHT] = {
 		2,2,2,2,2,3,3,3,3,3,
 		2,0,0,0,2,2,0,0,0,3,
-		2,0,1,0,2,2,0,0,0,3,
+		1,0,1,0,1,1,0,0,0,1,
 		2,0,0,0,0,0,0,0,0,3,
 		2,2,2,2,2,3,3,0,3,3,
 		2,0,0,0,0,0,4,0,4,0,
@@ -186,36 +186,46 @@ int main(int argc, char* argv[])
 	boxTex.tileHeight = 16;
 	boxTex.tileWidth = 16;
 
+	// Shadow texture
+	RayTex shadowTex;
+	shadowTex.pixData = shadow_data;
+	shadowTex.tileCount = 1;
+	shadowTex.tileHeight = 32;
+	shadowTex.tileWidth = 128;
+
 	// Initialize sprite assets
-	// RayTex spriteTexs[7];
-	// spriteTexs[0].pixData = cono_data;
-	// spriteTexs[0].tileCount = 1;
-	// spriteTexs[0].tileHeight = 128;
-	// spriteTexs[0].tileWidth = 128;
-	// spriteTexs[1].pixData = droptips_data;
-	// spriteTexs[1].tileCount = 1;
-	// spriteTexs[1].tileHeight = 128;
-	// spriteTexs[1].tileWidth = 128;
-	// spriteTexs[2].pixData = keule_data;
-	// spriteTexs[2].tileCount = 1;
-	// spriteTexs[2].tileHeight = 128;
-	// spriteTexs[2].tileWidth = 105;
-	// spriteTexs[3].pixData = lors_data;
-	// spriteTexs[3].tileCount = 1;
-	// spriteTexs[3].tileHeight = 128;
-	// spriteTexs[3].tileWidth = 122;
-	// spriteTexs[4].pixData = spaaace_data;
-	// spriteTexs[4].tileCount = 1;
-	// spriteTexs[4].tileHeight = 122;
-	// spriteTexs[4].tileWidth = 128;
-	// spriteTexs[5].pixData = thonking_data;
-	// spriteTexs[5].tileCount = 1;
-	// spriteTexs[5].tileHeight = 121;
-	// spriteTexs[5].tileWidth = 128;
-	// spriteTexs[6].pixData = udxs_data;
-	// spriteTexs[6].tileCount = 1;
-	// spriteTexs[6].tileHeight = 128;
-	// spriteTexs[6].tileWidth = 120;
+	RayTex spriteTexs[7];
+	spriteTexs[0].pixData = cono_data;
+	spriteTexs[0].tileCount = 1;
+	spriteTexs[0].tileHeight = 128;
+	spriteTexs[0].tileWidth = 128;
+	spriteTexs[1].pixData = droptips_data;
+	spriteTexs[1].tileCount = 1;
+	spriteTexs[1].tileHeight = 128;
+	spriteTexs[1].tileWidth = 128;
+	spriteTexs[2].pixData = keule_data;
+	spriteTexs[2].tileCount = 1;
+	spriteTexs[2].tileHeight = 128;
+	spriteTexs[2].tileWidth = 105;
+	spriteTexs[3].pixData = lors_data;
+	spriteTexs[3].tileCount = 1;
+	spriteTexs[3].tileHeight = 128;
+	spriteTexs[3].tileWidth = 122;
+	spriteTexs[4].pixData = spaaace_data;
+	spriteTexs[4].tileCount = 1;
+	spriteTexs[4].tileHeight = 122;
+	spriteTexs[4].tileWidth = 128;
+	spriteTexs[5].pixData = thonking_data;
+	spriteTexs[5].tileCount = 1;
+	spriteTexs[5].tileHeight = 121;
+	spriteTexs[5].tileWidth = 128;
+	spriteTexs[6].pixData = udxs_data;
+	spriteTexs[6].tileCount = 1;
+	spriteTexs[6].tileHeight = 128;
+	spriteTexs[6].tileWidth = 120;
+	spriteTexs[7].tileCount = 30;
+	spriteTexs[7].tileHeight = 128;
+	spriteTexs[7].tileWidth = 128;
 
 
 	// Demo player
@@ -235,24 +245,29 @@ int main(int argc, char* argv[])
 	// Demo spritelist with sprite
 	RaySprite spriteList[5];
 	uint8_t spriteListLength = 5;
-	spriteList[0].x = 6.5;
-	spriteList[0].y = 1.5;
-	spriteList[0].scaleFactor = 1.0;
-	spriteList[0].texture = &boxTex;//&spriteTexs[0];
-	spriteList[1].x = 8.5;
-	spriteList[1].y = 1.5;
-	spriteList[1].scaleFactor = 1.0;
-	spriteList[1].texture = &boxTex;//&spriteTexs[2];
-	spriteList[2].x = 7.5;
+	spriteList[0].x = 2.5;
+	spriteList[0].y = 7.5;
+	spriteList[0].h = 0.0;
+	spriteList[0].scaleFactor = 0.75;
+	spriteList[0].texture = &spriteTexs[5];//&spriteTexs[0];
+	spriteList[1].x = 7.5;
+	spriteList[1].y = 2.5;
+	spriteList[1].h = -0.5;
+	spriteList[1].scaleFactor = 0.5;
+	spriteList[1].texture = &shadowTex;//&spriteTexs[2];
+	spriteList[2].x = 100;
 	spriteList[2].y = 2.5;
+	spriteList[2].h = 0.0;
 	spriteList[2].scaleFactor = 1.0;
 	spriteList[2].texture = &boxTex;//&spriteTexs[4];
-	spriteList[3].x = 6.5;
+	spriteList[3].x = 100;
 	spriteList[3].y = 3.5;
+	spriteList[3].h = 0.0;
 	spriteList[3].scaleFactor = 1.0;
 	spriteList[3].texture = &boxTex;//&spriteTexs[3];
-	spriteList[4].x = 8.5;
+	spriteList[4].x = 100;
 	spriteList[4].y = 3.5;
+	spriteList[4].h = 0.0;
 	spriteList[4].scaleFactor = 1.0;
 	spriteList[4].texture = &boxTex;//&spriteTexs[6];	
 
@@ -308,6 +323,13 @@ int main(int argc, char* argv[])
 			}
 		}
 		RayEngine_updatePlayer(testPlayer,&testMap,dt);
+		spriteList[0].h = 0.25 + 0.175 * sin((double)SDL_GetTicks()/100);
+		spriteList[0].x = 2.5 + cos((double)SDL_GetTicks()/1000);
+		spriteList[0].y = 7.5 + sin((double)SDL_GetTicks()/1000); 
+		spriteList[0].texture = &spriteTexs[(SDL_GetTicks()/100)%7];
+		spriteList[1].scaleFactor = exp(-(spriteList[0].h+0.5))*spriteList[0].scaleFactor;
+		spriteList[1].x = spriteList[0].x;
+		spriteList[1].y = spriteList[0].y;
 
 		// DEBUG PLAYER VALUES
 		double playerStartAngle = testPlayer->angle - testPlayer->fov / 2.0;

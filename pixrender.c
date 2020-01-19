@@ -53,6 +53,10 @@ void PixBuffer_drawColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h, S
 
 void PixBuffer_drawTexColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h, RayTex* texture, uint32_t column, double fadePercent, SDL_Color targetColor)
 {
+    if (y + h < 0)
+    {
+        return;  // Sorry, messy fix but it works
+    }
     int32_t offH = h;
     int32_t offY = 0;
     if (y < 0)
@@ -61,7 +65,7 @@ void PixBuffer_drawTexColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h
         h = h + y;
         y = 0;
     }
-    if (y + h > buffer -> height)
+    if (y + h > buffer->height)
     {
         h = buffer->height - y;
     }

@@ -105,7 +105,7 @@ void RayEngine_raySpriteCompute(RayBuffer* rayBuffer, Player* player, uint32_t w
 	double startAngle = player->angle - player->fov / 2.0;
 	//double adjFactor = width / (2 * tan(player->fov / 2));
 	double scaleFactor = (double)width / (double)height * 2.4;
-	//Generate screenspace angle mapping constant
+	// Generate screenspace angle mapping constant
 	const double angleMapConstant = (double)(width) / (2*tan(player->fov/2));
 	// Iterate through sprite list and render to buffer
 	for (uint8_t s = 0; s < numSprites; s++)
@@ -120,11 +120,23 @@ void RayEngine_raySpriteCompute(RayBuffer* rayBuffer, Player* player, uint32_t w
 			// Compute column from screen angle
 			int32_t centerX = (int32_t)width / 2 + (int32_t)(angleMapConstant * tan(screenAngle));
 			// Get width and height
-			int32_t screenHeight = (int32_t)(double)height / (spriteDist * 10) * spriteList[s].scaleFactor;
-			int32_t screenWidth = (int32_t)((double)screenHeight * ((double)spriteList[s].texture->tileWidth / (double)spriteList[s].texture->tileHeight));
+			int32_t screenHeight;
+			int32_t screenWidth;
+			if (spriteList[s].texture->tileHeight >= spriteList[s].texture->tileWidth)
+			{
+				screenHeight = (int32_t)((double)height / (spriteDist * 5) * spriteList[s].scaleFactor);
+				screenWidth = (int32_t)((double)screenHeight * ((double)spriteList[s].texture->tileWidth / (double)spriteList[s].texture->tileHeight));
+			}
+			else
+			{
+				screenWidth = (int32_t)((double)height / (spriteDist * 5) * spriteList[s].scaleFactor);
+				screenHeight = (int32_t)((double)screenWidth * ((double)spriteList[s].texture->tileHeight / (double)spriteList[s].texture->tileWidth));
+			}
+			
+			int32_t spriteHeight = (int32_t)(spriteList[s].h * 40 / spriteDist ); // I dunno why it's 40
 			int32_t startX = centerX - screenWidth / 2;
 			int32_t endX = startX + screenWidth;
-			int32_t startY = (height / 2) - (screenHeight / 2);
+			int32_t startY = (int32_t)floor((height / 2) - ((double)screenHeight / 2) - spriteHeight);
 			// Write to buffer if in fulcrum
 			if (startX <= (int32_t)width && endX >= 0)
 			{
