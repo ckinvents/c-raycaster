@@ -25,6 +25,17 @@ void RayEngine_generateMap(Map* newMap, unsigned char* charList, int width, int 
 	newMap->border = border;
 }
 
+void RayEngine_initSprite(RaySprite* newSprite, RayTex* texture, double scaleFactor, double x, double y, double h)
+{
+	newSprite->texture = texture;
+	newSprite->scaleFactor = scaleFactor;
+	newSprite->x = x;
+	newSprite->y = y;
+	newSprite->h = h;
+	newSprite->frameNum = 0;
+	newSprite->alphaNum = 1.0;
+}
+
 void RayEngine_drawMinimap(PixBuffer* buffer, Player* player, unsigned int width, unsigned int height, Map* map, int blockSize)
 {
 	SDL_Rect mapRect;
@@ -150,6 +161,7 @@ void RayEngine_raySpriteCompute(RayBuffer* rayBuffer, Player* player, uint32_t w
 						rayBuffer[i].layers[rayBuffer[i].numLayers].texture = spriteList[s].texture;
 						rayBuffer[i].layers[rayBuffer[i].numLayers].texCoord = texCoord;
 						rayBuffer[i].layers[rayBuffer[i].numLayers].tileNum = spriteList[s].frameNum;
+						rayBuffer[i].layers[rayBuffer[i].numLayers].alphaNum = spriteList[s].alphaNum;
 						rayBuffer[i].layers[rayBuffer[i].numLayers].depth = spriteDist;
 						rayBuffer[i].layers[rayBuffer[i].numLayers].yCoord = startY;
 						rayBuffer[i].layers[rayBuffer[i].numLayers].height = screenHeight;
@@ -214,6 +226,7 @@ void RayEngine_raycastCompute(RayBuffer* rayBuffer, Player* player, uint32_t wid
 					rayBuffer[i].layers[rayBuffer[i].numLayers].texture = texData;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].texCoord = texCoord;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].tileNum = 0;
+					rayBuffer[i].layers[rayBuffer[i].numLayers].alphaNum = 1;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].depth = depth;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].yCoord = (int32_t)(((double)height / 2.0 - drawHeight)/jumpHeight + height * (1.0 - 1.0/jumpHeight));
 					rayBuffer[i].layers[rayBuffer[i].numLayers].height = (int32_t)drawHeight*2;
@@ -224,6 +237,7 @@ void RayEngine_raycastCompute(RayBuffer* rayBuffer, Player* player, uint32_t wid
 					rayBuffer[i].layers[rayBuffer[i].numLayers].texture = NULL;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].texCoord = 0;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].tileNum = 0;
+					rayBuffer[i].layers[rayBuffer[i].numLayers].alphaNum = 0;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].depth = 0;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].yCoord = 0;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].height = 0;
@@ -349,7 +363,7 @@ void RayEngine_texRaycastRender(PixBuffer* buffer, uint32_t width, uint32_t heig
 			for (int j = 0; j < rayBuffer[i].numLayers; j++)
 			{
 				double colorGrad = (rayBuffer[i].layers[j].depth) / renderDepth;
-				PixBuffer_drawTexColumn(buffer, i, rayBuffer[i].layers[j].yCoord, rayBuffer[i].layers[j].height, rayBuffer[i].layers[j].texture, rayBuffer[i].layers[j].tileNum, rayBuffer[i].layers[j].texCoord, colorGrad, fadeColor);
+				PixBuffer_drawTexColumn(buffer, i, rayBuffer[i].layers[j].yCoord, rayBuffer[i].layers[j].height, rayBuffer[i].layers[j].texture, rayBuffer[i].layers[j].tileNum, rayBuffer[i].layers[j].alphaNum, rayBuffer[i].layers[j].texCoord, colorGrad, fadeColor);
 			}
 		}
 		rayBuffer[i].numLayers = 0;

@@ -243,64 +243,21 @@ int main(int argc, char* argv[])
 	}
 	RayEngine_generateAngleValues(WIDTH,testPlayer);
 
-	// Demo spritelist with sprite
+	// Demo spritelist with sprites
 	RaySprite spriteList[18];
 	uint8_t spriteListLength = 18;
-	spriteList[0].scaleFactor = 1.0;
-	spriteList[1].scaleFactor = 0.4;
-	spriteList[2].scaleFactor = 0.4;
-	spriteList[3].scaleFactor = 0.4;
-	spriteList[4].scaleFactor = 0.4;
-	spriteList[5].scaleFactor = 0.4;
-	spriteList[6].scaleFactor = 0.4;
-	spriteList[7].scaleFactor = 0.4;
-	spriteList[8].scaleFactor = 0.4;
-	spriteList[0].h = 0;
-	spriteList[1].h = 0;
-	spriteList[2].h = 0;
-	spriteList[3].h = 0;
-	spriteList[4].h = 0;
-	spriteList[5].h = 0;
-	spriteList[6].h = 0;
-	spriteList[7].h = 0;
-	spriteList[8].h = 0;
-	spriteList[0].texture = &spriteTexs[7];
-	spriteList[1].texture = &spriteTexs[7];
-	spriteList[2].texture = &spriteTexs[7];
-	spriteList[3].texture = &spriteTexs[7];
-	spriteList[4].texture = &spriteTexs[7];
-	spriteList[5].texture = &spriteTexs[7];
-	spriteList[6].texture = &spriteTexs[7];
-	spriteList[7].texture = &spriteTexs[7];
-	spriteList[8].texture = &spriteTexs[7];
-
-	spriteList[9].h = -0.5;
-	spriteList[10].h = -0.5;
-	spriteList[11].h = -0.5;
-	spriteList[12].h = -0.5;
-	spriteList[13].h = -0.5;
-	spriteList[14].h = -0.5;
-	spriteList[15].h = -0.5;
-	spriteList[16].h = -0.5;
-	spriteList[17].h = -0.5;
-	spriteList[9].texture = &shadowTex;
-	spriteList[10].texture = &shadowTex;
-	spriteList[11].texture = &shadowTex;
-	spriteList[12].texture = &shadowTex;
-	spriteList[13].texture = &shadowTex;
-	spriteList[14].texture = &shadowTex;
-	spriteList[15].texture = &shadowTex;
-	spriteList[16].texture = &shadowTex;
-	spriteList[17].texture = &shadowTex;
-	spriteList[9].frameNum = 0;
-	spriteList[10].frameNum = 0;
-	spriteList[11].frameNum = 0;
-	spriteList[12].frameNum = 0;
-	spriteList[13].frameNum = 0;
-	spriteList[14].frameNum = 0;
-	spriteList[15].frameNum = 0;
-	spriteList[16].frameNum = 0;
-	spriteList[17].frameNum = 0;
+	// Entity sprites
+	RayEngine_initSprite(&spriteList[0], &spriteTexs[7], 1.0, 0, 0, 0);
+	for (int s = 1; s < 9; s++)
+	{
+		RayEngine_initSprite(&spriteList[s], &spriteTexs[7], 0.4, 0, 0, 0);
+	}
+	// Shadow sprites
+	for (int s = 9; s < 18; s++)
+	{
+		RayEngine_initSprite(&spriteList[s], &shadowTex, 0, 0, 0, -0.5);
+		spriteList[s].alphaNum = 0.5;
+	}
 
 	// Allocate depth buffer 
 	RayBuffer rayBuffer[WIDTH];
@@ -325,7 +282,7 @@ int main(int argc, char* argv[])
 	SDL_Rect screenRect = {0,0,WIDTH,HEIGHT};
 
 	// Generate background texture
-	SDL_Texture* gradientTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STATIC, WIDTH, HEIGHT);
+	uint32_t texPixels[WIDTH * HEIGHT];
 	SDL_Rect gradientRectTop = {0,0,WIDTH,HEIGHT/2};
 	SDL_Color colorTop1 = {189,255,255,255};//{255,100,100,255};
 	SDL_Color colorTop2 = {77,150,154,255};//{0,0,100,255};
@@ -339,7 +296,7 @@ int main(int argc, char* argv[])
 	PixBuffer_drawHorizGradient(&buffer,&gradientRectBottom, colorBottom1, colorBottom2);
 	// Note: between 15 & 20 is good for 16 color palettes
 	PixBuffer_orderDither256(&buffer, 5);
-	SDL_UpdateTexture(gradientTexture, NULL, buffer.pixels, sizeof(uint32_t) * WIDTH);
+	memcpy(texPixels, buffer.pixels, sizeof(uint32_t) * WIDTH * HEIGHT);
 
 	uint8_t quit = 0;
 	uint8_t frameCounter = 0;
@@ -354,61 +311,22 @@ int main(int argc, char* argv[])
 			}
 		}
 		RayEngine_updatePlayer(testPlayer,&testMap,dt);
-		//spriteList[0].h = 0.25 + 0.175 * sin((double)SDL_GetTicks()/100);
+		// Sprite updates
+		for (int s = 1; s < 9; s++)
+		{
+			spriteList[s].x = 2.5 + cos((double)runTime/1000+(s-1)*M_PI/4);
+			spriteList[s].y = 7.5 + sin((double)runTime/1000+(s-1)*M_PI/4);
+			spriteList[s].frameNum = (runTime)%30;
+			spriteList[s+9].scaleFactor = exp(-(spriteList[s].h+0.5))*spriteList[s].scaleFactor;
+			spriteList[s+9].x = spriteList[s].x;
+			spriteList[s+9].y = spriteList[s].y;
+		}
 		spriteList[0].x = 2.5;
-		spriteList[1].x = 2.5 + cos((double)runTime/1000);
-		spriteList[2].x = 2.5 + cos((double)runTime/1000+M_PI/4);
-		spriteList[3].x = 2.5 + cos((double)runTime/1000+2*M_PI/4);
-		spriteList[4].x = 2.5 + cos((double)runTime/1000+3*M_PI/4);
-		spriteList[5].x = 2.5 + cos((double)runTime/1000+4*M_PI/4);
-		spriteList[6].x = 2.5 + cos((double)runTime/1000+5*M_PI/4);
-		spriteList[7].x = 2.5 + cos((double)runTime/1000+6*M_PI/4);
-		spriteList[8].x = 2.5 + cos((double)runTime/1000+7*M_PI/4);
 		spriteList[0].y = 7.5;
-		spriteList[1].y = 7.5 + sin((double)runTime/1000);
-		spriteList[2].y = 7.5 + sin((double)runTime/1000+M_PI/4);
-		spriteList[3].y = 7.5 + sin((double)runTime/1000+2*M_PI/4);
-		spriteList[4].y = 7.5 + sin((double)runTime/1000+3*M_PI/4);
-		spriteList[5].y = 7.5 + sin((double)runTime/1000+4*M_PI/4);
-		spriteList[6].y = 7.5 + sin((double)runTime/1000+5*M_PI/4);
-		spriteList[7].y = 7.5 + sin((double)runTime/1000+6*M_PI/4);
-		spriteList[8].y = 7.5 + sin((double)runTime/1000+7*M_PI/4);
-		spriteList[0].frameNum = (runTime/100)%30;
-		spriteList[1].frameNum = (runTime)%30;
-		spriteList[2].frameNum = (runTime)%30;
-		spriteList[3].frameNum = (runTime)%30;
-		spriteList[4].frameNum = (runTime)%30;
-		spriteList[5].frameNum = (runTime)%30;
-		spriteList[6].frameNum = (runTime)%30;
-		spriteList[7].frameNum = (runTime)%30;
-		spriteList[8].frameNum = (runTime)%30;
+		spriteList[0].frameNum = 29-(runTime/100)%30;
 		spriteList[9].scaleFactor = exp(-(spriteList[0].h+0.5))*spriteList[0].scaleFactor;
-		spriteList[10].scaleFactor = exp(-(spriteList[1].h+0.5))*spriteList[1].scaleFactor;
-		spriteList[11].scaleFactor = exp(-(spriteList[2].h+0.5))*spriteList[2].scaleFactor;
-		spriteList[12].scaleFactor = exp(-(spriteList[3].h+0.5))*spriteList[3].scaleFactor;
-		spriteList[13].scaleFactor = exp(-(spriteList[4].h+0.5))*spriteList[4].scaleFactor;
-		spriteList[14].scaleFactor = exp(-(spriteList[5].h+0.5))*spriteList[5].scaleFactor;
-		spriteList[15].scaleFactor = exp(-(spriteList[6].h+0.5))*spriteList[6].scaleFactor;
-		spriteList[16].scaleFactor = exp(-(spriteList[7].h+0.5))*spriteList[7].scaleFactor;
-		spriteList[17].scaleFactor = exp(-(spriteList[8].h+0.5))*spriteList[8].scaleFactor;
 		spriteList[9].x = spriteList[0].x;
-		spriteList[10].x = spriteList[1].x;
-		spriteList[11].x = spriteList[2].x;
-		spriteList[12].x = spriteList[3].x;
-		spriteList[13].x = spriteList[4].x;
-		spriteList[14].x = spriteList[5].x;
-		spriteList[15].x = spriteList[6].x;
-		spriteList[16].x = spriteList[7].x;
-		spriteList[17].x = spriteList[8].x;
 		spriteList[9].y = spriteList[0].y;
-		spriteList[10].y = spriteList[1].y;
-		spriteList[11].y = spriteList[2].y;
-		spriteList[12].y = spriteList[3].y;
-		spriteList[13].y = spriteList[4].y;
-		spriteList[14].y = spriteList[5].y;
-		spriteList[15].y = spriteList[6].y;
-		spriteList[16].y = spriteList[7].y;
-		spriteList[17].y = spriteList[8].y;
 
 		// DEBUG PLAYER VALUES
 		double playerStartAngle = testPlayer->angle - testPlayer->fov / 2.0;
@@ -419,8 +337,8 @@ int main(int argc, char* argv[])
 		SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
 		SDL_RenderClear(renderer);
 		SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-		SDL_RenderCopy(renderer,gradientTexture,NULL,NULL);
 		PixBuffer_clearBuffer(&buffer);
+		memcpy(buffer.pixels, texPixels, sizeof(uint32_t) * WIDTH * HEIGHT);
 		//RayEngine_raycastRender(&buffer, testPlayer, WIDTH, HEIGHT, &testMap, 0.01);
 		RayEngine_raycastCompute(rayBuffer, testPlayer, WIDTH, HEIGHT, &testMap, 0.01, &boxTex);
 		RayEngine_raySpriteCompute(rayBuffer, testPlayer, WIDTH, HEIGHT, 0.01, spriteList, spriteListLength);

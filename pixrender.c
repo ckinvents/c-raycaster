@@ -51,7 +51,7 @@ void PixBuffer_drawColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h, S
     }
 }
 
-void PixBuffer_drawTexColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h, RayTex* texture, uint8_t tileNum, uint32_t column, double fadePercent, SDL_Color targetColor)
+void PixBuffer_drawTexColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h, RayTex* texture, uint8_t tileNum, double alphaNum, uint32_t column, double fadePercent, SDL_Color targetColor)
 {
     if (y + h < 0)
     {
@@ -78,8 +78,19 @@ void PixBuffer_drawTexColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h
         int g = (int)((pix >> 2*8) & 0xFF);
         int b = (int)((pix >> 8) & 0xFF);
         int a = (int)(pix & 0xFF);
-        if (a) // Basic transparency, ignore fully transparent pixels
+        if (a)
         {
+            if (alphaNum != 0 && alphaNum != 1) // Alpha transparency, compute alpha based on array colors
+            {
+                double alpha = 255.0/((double)a) * alphaNum;
+                uint32_t oldPix = buffer->pixels[(i+y)*buffer->width+x];
+                int oldR = (int)(oldPix >> 3*8);
+                int oldG = (int)((oldPix >> 2*8) & 0xFF);
+                int oldB = (int)((oldPix >> 8) & 0xFF);
+                r = (int)((double)r * alpha + (double)oldR * (1-alpha));
+                g = (int)((double)g * alpha + (double)oldG * (1-alpha));
+                b = (int)((double)b * alpha + (double)oldB * (1-alpha));
+            }
             int dr = targetColor.r - r;
             int dg = targetColor.g - g;
             int db = targetColor.b - b;
