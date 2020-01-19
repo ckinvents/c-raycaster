@@ -25,6 +25,7 @@ typedef struct _Map {
 typedef struct _RayColumn {
 	RayTex* texture;
 	uint32_t texCoord;
+	uint8_t tileNum;
 	double depth;
 	int32_t yCoord;
 	uint32_t height;
@@ -37,6 +38,7 @@ typedef struct _RayBuffer {
 
 typedef struct _RaySprite {
 	RayTex* texture;
+	uint8_t frameNum;
 	double scaleFactor;
 	double x;
 	double y;

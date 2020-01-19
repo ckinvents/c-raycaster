@@ -17,7 +17,7 @@ typedef struct _RayTex {
 } RayTex;
 
 void PixBuffer_drawColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h, SDL_Color color);
-void PixBuffer_drawTexColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h, RayTex* texture, uint32_t column, double fadePercent, SDL_Color targetColor);
+void PixBuffer_drawTexColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h, RayTex* texture, uint8_t tileNum, uint32_t column, double fadePercent, SDL_Color targetColor);
 void PixBuffer_drawRect(PixBuffer* buffer, SDL_Rect* rect, SDL_Color color);
 void PixBuffer_drawHorizGradient(PixBuffer* buffer, SDL_Rect* rect, SDL_Color colTop, SDL_Color colBottom);
 void PixBuffer_drawPix(PixBuffer* buffer, uint32_t x, uint32_t y, SDL_Color color);

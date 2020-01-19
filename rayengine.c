@@ -98,7 +98,6 @@ int raycastCompare(void *buffer1, void *buffer2)
 	}
 }
 
-
 void RayEngine_raySpriteCompute(RayBuffer* rayBuffer, Player* player, uint32_t width, uint32_t height, double resolution, RaySprite* spriteList, uint8_t numSprites)
 {
 	// Establish starting angle and sweep per column
@@ -133,7 +132,7 @@ void RayEngine_raySpriteCompute(RayBuffer* rayBuffer, Player* player, uint32_t w
 				screenHeight = (int32_t)((double)screenWidth * ((double)spriteList[s].texture->tileHeight / (double)spriteList[s].texture->tileWidth));
 			}
 			
-			int32_t spriteHeight = (int32_t)(spriteList[s].h * 40 / spriteDist ); // I dunno why it's 40
+			int32_t spriteHeight = (int32_t)(spriteList[s].h * height / (spriteDist * 5)); // I dunno why it's 40
 			int32_t startX = centerX - screenWidth / 2;
 			int32_t endX = startX + screenWidth;
 			int32_t startY = (int32_t)floor((height / 2) - ((double)screenHeight / 2) - spriteHeight);
@@ -150,6 +149,7 @@ void RayEngine_raySpriteCompute(RayBuffer* rayBuffer, Player* player, uint32_t w
 						texCoord = (uint32_t)floor(((double)spriteColumn / (double)screenWidth) * spriteList[s].texture->tileWidth);
 						rayBuffer[i].layers[rayBuffer[i].numLayers].texture = spriteList[s].texture;
 						rayBuffer[i].layers[rayBuffer[i].numLayers].texCoord = texCoord;
+						rayBuffer[i].layers[rayBuffer[i].numLayers].tileNum = spriteList[s].frameNum;
 						rayBuffer[i].layers[rayBuffer[i].numLayers].depth = spriteDist;
 						rayBuffer[i].layers[rayBuffer[i].numLayers].yCoord = startY;
 						rayBuffer[i].layers[rayBuffer[i].numLayers].height = screenHeight;
@@ -213,6 +213,7 @@ void RayEngine_raycastCompute(RayBuffer* rayBuffer, Player* player, uint32_t wid
 					//PixBuffer_drawTexColumn(buffer, i, (int)(((double)height / 2.0 - drawHeight)/jumpHeight + height * (1.0 - 1.0/jumpHeight)), (int)drawHeight*2, texData, texCoord, colorGrad, fadeColor);
 					rayBuffer[i].layers[rayBuffer[i].numLayers].texture = texData;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].texCoord = texCoord;
+					rayBuffer[i].layers[rayBuffer[i].numLayers].tileNum = 0;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].depth = depth;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].yCoord = (int32_t)(((double)height / 2.0 - drawHeight)/jumpHeight + height * (1.0 - 1.0/jumpHeight));
 					rayBuffer[i].layers[rayBuffer[i].numLayers].height = (int32_t)drawHeight*2;
@@ -222,6 +223,7 @@ void RayEngine_raycastCompute(RayBuffer* rayBuffer, Player* player, uint32_t wid
 					//PixBuffer_drawColumn(buffer, i, 0, height, colorDat);
 					rayBuffer[i].layers[rayBuffer[i].numLayers].texture = NULL;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].texCoord = 0;
+					rayBuffer[i].layers[rayBuffer[i].numLayers].tileNum = 0;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].depth = 0;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].yCoord = 0;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].height = 0;
@@ -347,7 +349,7 @@ void RayEngine_texRaycastRender(PixBuffer* buffer, uint32_t width, uint32_t heig
 			for (int j = 0; j < rayBuffer[i].numLayers; j++)
 			{
 				double colorGrad = (rayBuffer[i].layers[j].depth) / renderDepth;
-				PixBuffer_drawTexColumn(buffer, i, rayBuffer[i].layers[j].yCoord, rayBuffer[i].layers[j].height, rayBuffer[i].layers[j].texture, rayBuffer[i].layers[j].texCoord, colorGrad, fadeColor);
+				PixBuffer_drawTexColumn(buffer, i, rayBuffer[i].layers[j].yCoord, rayBuffer[i].layers[j].height, rayBuffer[i].layers[j].texture, rayBuffer[i].layers[j].tileNum, rayBuffer[i].layers[j].texCoord, colorGrad, fadeColor);
 			}
 		}
 		rayBuffer[i].numLayers = 0;

@@ -46,7 +46,7 @@ int main(int argc, char* argv[])
 		2,2,2,2,2,3,3,0,3,3,
 		2,0,0,0,0,0,4,0,4,0,
 		2,0,0,0,0,0,4,0,4,0,
-		2,0,1,0,0,0,4,0,4,0,
+		2,0,0,0,0,0,4,0,4,0,
 		0,0,0,0,0,4,4,0,4,4,
 		2,0,0,0,0,4,0,0,0,4,
 		0,0,0,0,0,0,0,0,0,4,
@@ -194,7 +194,7 @@ int main(int argc, char* argv[])
 	shadowTex.tileWidth = 128;
 
 	// Initialize sprite assets
-	RayTex spriteTexs[7];
+	RayTex spriteTexs[8];
 	spriteTexs[0].pixData = cono_data;
 	spriteTexs[0].tileCount = 1;
 	spriteTexs[0].tileHeight = 128;
@@ -223,6 +223,7 @@ int main(int argc, char* argv[])
 	spriteTexs[6].tileCount = 1;
 	spriteTexs[6].tileHeight = 128;
 	spriteTexs[6].tileWidth = 120;
+	spriteTexs[7].pixData = spinning_thonk_data;
 	spriteTexs[7].tileCount = 30;
 	spriteTexs[7].tileHeight = 128;
 	spriteTexs[7].tileWidth = 128;
@@ -243,33 +244,63 @@ int main(int argc, char* argv[])
 	RayEngine_generateAngleValues(WIDTH,testPlayer);
 
 	// Demo spritelist with sprite
-	RaySprite spriteList[5];
-	uint8_t spriteListLength = 5;
-	spriteList[0].x = 2.5;
-	spriteList[0].y = 7.5;
-	spriteList[0].h = 0.0;
-	spriteList[0].scaleFactor = 0.75;
-	spriteList[0].texture = &spriteTexs[5];//&spriteTexs[0];
-	spriteList[1].x = 7.5;
-	spriteList[1].y = 2.5;
-	spriteList[1].h = -0.5;
-	spriteList[1].scaleFactor = 0.5;
-	spriteList[1].texture = &shadowTex;//&spriteTexs[2];
-	spriteList[2].x = 100;
-	spriteList[2].y = 2.5;
-	spriteList[2].h = 0.0;
-	spriteList[2].scaleFactor = 1.0;
-	spriteList[2].texture = &boxTex;//&spriteTexs[4];
-	spriteList[3].x = 100;
-	spriteList[3].y = 3.5;
-	spriteList[3].h = 0.0;
-	spriteList[3].scaleFactor = 1.0;
-	spriteList[3].texture = &boxTex;//&spriteTexs[3];
-	spriteList[4].x = 100;
-	spriteList[4].y = 3.5;
-	spriteList[4].h = 0.0;
-	spriteList[4].scaleFactor = 1.0;
-	spriteList[4].texture = &boxTex;//&spriteTexs[6];	
+	RaySprite spriteList[18];
+	uint8_t spriteListLength = 18;
+	spriteList[0].scaleFactor = 1.0;
+	spriteList[1].scaleFactor = 0.4;
+	spriteList[2].scaleFactor = 0.4;
+	spriteList[3].scaleFactor = 0.4;
+	spriteList[4].scaleFactor = 0.4;
+	spriteList[5].scaleFactor = 0.4;
+	spriteList[6].scaleFactor = 0.4;
+	spriteList[7].scaleFactor = 0.4;
+	spriteList[8].scaleFactor = 0.4;
+	spriteList[0].h = 0;
+	spriteList[1].h = 0;
+	spriteList[2].h = 0;
+	spriteList[3].h = 0;
+	spriteList[4].h = 0;
+	spriteList[5].h = 0;
+	spriteList[6].h = 0;
+	spriteList[7].h = 0;
+	spriteList[8].h = 0;
+	spriteList[0].texture = &spriteTexs[7];
+	spriteList[1].texture = &spriteTexs[7];
+	spriteList[2].texture = &spriteTexs[7];
+	spriteList[3].texture = &spriteTexs[7];
+	spriteList[4].texture = &spriteTexs[7];
+	spriteList[5].texture = &spriteTexs[7];
+	spriteList[6].texture = &spriteTexs[7];
+	spriteList[7].texture = &spriteTexs[7];
+	spriteList[8].texture = &spriteTexs[7];
+
+	spriteList[9].h = -0.5;
+	spriteList[10].h = -0.5;
+	spriteList[11].h = -0.5;
+	spriteList[12].h = -0.5;
+	spriteList[13].h = -0.5;
+	spriteList[14].h = -0.5;
+	spriteList[15].h = -0.5;
+	spriteList[16].h = -0.5;
+	spriteList[17].h = -0.5;
+	spriteList[9].texture = &shadowTex;
+	spriteList[10].texture = &shadowTex;
+	spriteList[11].texture = &shadowTex;
+	spriteList[12].texture = &shadowTex;
+	spriteList[13].texture = &shadowTex;
+	spriteList[14].texture = &shadowTex;
+	spriteList[15].texture = &shadowTex;
+	spriteList[16].texture = &shadowTex;
+	spriteList[17].texture = &shadowTex;
+	spriteList[9].frameNum = 0;
+	spriteList[10].frameNum = 0;
+	spriteList[11].frameNum = 0;
+	spriteList[12].frameNum = 0;
+	spriteList[13].frameNum = 0;
+	spriteList[14].frameNum = 0;
+	spriteList[15].frameNum = 0;
+	spriteList[16].frameNum = 0;
+	spriteList[17].frameNum = 0;
 
 	// Allocate depth buffer 
 	RayBuffer rayBuffer[WIDTH];
@@ -323,13 +354,61 @@ int main(int argc, char* argv[])
 			}
 		}
 		RayEngine_updatePlayer(testPlayer,&testMap,dt);
-		spriteList[0].h = 0.25 + 0.175 * sin((double)SDL_GetTicks()/100);
-		spriteList[0].x = 2.5 + cos((double)SDL_GetTicks()/1000);
-		spriteList[0].y = 7.5 + sin((double)SDL_GetTicks()/1000); 
-		spriteList[0].texture = &spriteTexs[(SDL_GetTicks()/100)%7];
-		spriteList[1].scaleFactor = exp(-(spriteList[0].h+0.5))*spriteList[0].scaleFactor;
-		spriteList[1].x = spriteList[0].x;
-		spriteList[1].y = spriteList[0].y;
+		//spriteList[0].h = 0.25 + 0.175 * sin((double)SDL_GetTicks()/100);
+		spriteList[0].x = 2.5;
+		spriteList[1].x = 2.5 + cos((double)runTime/1000);
+		spriteList[2].x = 2.5 + cos((double)runTime/1000+M_PI/4);
+		spriteList[3].x = 2.5 + cos((double)runTime/1000+2*M_PI/4);
+		spriteList[4].x = 2.5 + cos((double)runTime/1000+3*M_PI/4);
+		spriteList[5].x = 2.5 + cos((double)runTime/1000+4*M_PI/4);
+		spriteList[6].x = 2.5 + cos((double)runTime/1000+5*M_PI/4);
+		spriteList[7].x = 2.5 + cos((double)runTime/1000+6*M_PI/4);
+		spriteList[8].x = 2.5 + cos((double)runTime/1000+7*M_PI/4);
+		spriteList[0].y = 7.5;
+		spriteList[1].y = 7.5 + sin((double)runTime/1000);
+		spriteList[2].y = 7.5 + sin((double)runTime/1000+M_PI/4);
+		spriteList[3].y = 7.5 + sin((double)runTime/1000+2*M_PI/4);
+		spriteList[4].y = 7.5 + sin((double)runTime/1000+3*M_PI/4);
+		spriteList[5].y = 7.5 + sin((double)runTime/1000+4*M_PI/4);
+		spriteList[6].y = 7.5 + sin((double)runTime/1000+5*M_PI/4);
+		spriteList[7].y = 7.5 + sin((double)runTime/1000+6*M_PI/4);
+		spriteList[8].y = 7.5 + sin((double)runTime/1000+7*M_PI/4);
+		spriteList[0].frameNum = (runTime/100)%30;
+		spriteList[1].frameNum = (runTime)%30;
+		spriteList[2].frameNum = (runTime)%30;
+		spriteList[3].frameNum = (runTime)%30;
+		spriteList[4].frameNum = (runTime)%30;
+		spriteList[5].frameNum = (runTime)%30;
+		spriteList[6].frameNum = (runTime)%30;
+		spriteList[7].frameNum = (runTime)%30;
+		spriteList[8].frameNum = (runTime)%30;
+		spriteList[9].scaleFactor = exp(-(spriteList[0].h+0.5))*spriteList[0].scaleFactor;
+		spriteList[10].scaleFactor = exp(-(spriteList[1].h+0.5))*spriteList[1].scaleFactor;
+		spriteList[11].scaleFactor = exp(-(spriteList[2].h+0.5))*spriteList[2].scaleFactor;
+		spriteList[12].scaleFactor = exp(-(spriteList[3].h+0.5))*spriteList[3].scaleFactor;
+		spriteList[13].scaleFactor = exp(-(spriteList[4].h+0.5))*spriteList[4].scaleFactor;
+		spriteList[14].scaleFactor = exp(-(spriteList[5].h+0.5))*spriteList[5].scaleFactor;
+		spriteList[15].scaleFactor = exp(-(spriteList[6].h+0.5))*spriteList[6].scaleFactor;
+		spriteList[16].scaleFactor = exp(-(spriteList[7].h+0.5))*spriteList[7].scaleFactor;
+		spriteList[17].scaleFactor = exp(-(spriteList[8].h+0.5))*spriteList[8].scaleFactor;
+		spriteList[9].x = spriteList[0].x;
+		spriteList[10].x = spriteList[1].x;
+		spriteList[11].x = spriteList[2].x;
+		spriteList[12].x = spriteList[3].x;
+		spriteList[13].x = spriteList[4].x;
+		spriteList[14].x = spriteList[5].x;
+		spriteList[15].x = spriteList[6].x;
+		spriteList[16].x = spriteList[7].x;
+		spriteList[17].x = spriteList[8].x;
+		spriteList[9].y = spriteList[0].y;
+		spriteList[10].y = spriteList[1].y;
+		spriteList[11].y = spriteList[2].y;
+		spriteList[12].y = spriteList[3].y;
+		spriteList[13].y = spriteList[4].y;
+		spriteList[14].y = spriteList[5].y;
+		spriteList[15].y = spriteList[6].y;
+		spriteList[16].y = spriteList[7].y;
+		spriteList[17].y = spriteList[8].y;
 
 		// DEBUG PLAYER VALUES
 		double playerStartAngle = testPlayer->angle - testPlayer->fov / 2.0;

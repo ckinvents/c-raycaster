@@ -51,7 +51,7 @@ void PixBuffer_drawColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h, S
     }
 }
 
-void PixBuffer_drawTexColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h, RayTex* texture, uint32_t column, double fadePercent, SDL_Color targetColor)
+void PixBuffer_drawTexColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h, RayTex* texture, uint8_t tileNum, uint32_t column, double fadePercent, SDL_Color targetColor)
 {
     if (y + h < 0)
     {
@@ -73,7 +73,7 @@ void PixBuffer_drawTexColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h
     for (int32_t i = 0; i < h; i++)
     {
         // Calculate pixel to draw from texture
-        uint32_t pix = texture->pixData[(uint32_t)(((double)(offY + i)/(double)offH)*(texture->tileHeight)) * texture->tileWidth + column];
+        uint32_t pix = texture->pixData[tileNum*texture->tileWidth*texture->tileHeight + (uint32_t)(((double)(offY + i)/(double)offH)*(texture->tileHeight)) * texture->tileWidth + column];
         int r = (int)(pix >> 3*8);
         int g = (int)((pix >> 2*8) & 0xFF);
         int b = (int)((pix >> 8) & 0xFF);
