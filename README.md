@@ -1,6 +1,6 @@
 # c-raycaster project
 
-![Current Version](image.png)
+![Now with sprites!](image.png)
 
 Connor Ennis, 2019
 
