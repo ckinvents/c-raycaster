@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "rayengine.h"
+#include "gameengine.h"
 #include "pixrender.h"
 #include "assets/asset_list.h"
 
@@ -40,18 +40,18 @@ int main(int argc, char* argv[])
 
 	unsigned char testMapChar[MAP_WIDTH*MAP_HEIGHT] = {
 		2,2,2,2,2,3,3,3,3,3,
-		2,0,0,0,2,2,0,0,0,3,
-		1,0,1,0,1,1,0,0,0,1,
+		2,0,0,0,2,3,0,0,0,3,
+		1,0,5,0,2,3,0,0,0,3,
 		2,0,0,0,0,0,0,0,0,3,
 		2,2,2,2,2,3,3,0,3,3,
-		2,0,0,0,0,0,4,0,4,0,
-		2,0,0,0,0,0,4,0,4,0,
-		2,0,0,0,0,0,4,0,4,0,
-		0,0,0,0,0,4,4,0,4,4,
-		2,0,0,0,0,4,0,0,0,4,
+		6,6,6,6,6,0,4,0,4,0,
+		6,0,0,0,6,0,4,0,4,0,
+		6,0,8,0,6,0,4,0,4,0,
+		0,0,0,0,6,4,4,0,4,4,
+		6,0,0,0,6,4,0,0,0,4,
 		0,0,0,0,0,0,0,0,0,4,
-		2,0,0,0,0,4,0,0,0,4,
-		2,2,0,2,2,4,4,4,4,4
+		6,0,0,0,6,4,0,0,0,4,
+		6,6,0,6,6,4,4,4,4,4
 	};
 
 	static const uint32_t box_data[256] = {
@@ -185,6 +185,11 @@ int main(int argc, char* argv[])
 	boxTex.tileCount = 1;
 	boxTex.tileHeight = 16;
 	boxTex.tileWidth = 16;
+	RayTex mapTex;
+	mapTex.pixData = blox_data;
+	mapTex.tileCount = 8;
+	mapTex.tileHeight = 16;
+	mapTex.tileWidth = 16;
 
 	// Shadow texture
 	RayTex shadowTex;
@@ -194,7 +199,7 @@ int main(int argc, char* argv[])
 	shadowTex.tileWidth = 128;
 
 	// Initialize sprite assets
-	RayTex spriteTexs[8];
+	RayTex spriteTexs[9];
 	spriteTexs[0].pixData = cono_data;
 	spriteTexs[0].tileCount = 1;
 	spriteTexs[0].tileHeight = 128;
@@ -227,37 +232,29 @@ int main(int argc, char* argv[])
 	spriteTexs[7].tileCount = 30;
 	spriteTexs[7].tileHeight = 128;
 	spriteTexs[7].tileWidth = 128;
+	spriteTexs[8].pixData = ball_data;
+	spriteTexs[8].tileCount = 1;
+	spriteTexs[8].tileWidth = 31;
+	spriteTexs[8].tileHeight = 32;
 
 
 	// Demo player
 	double angleValues[WIDTH];
-	Player* testPlayer = malloc(sizeof(Player));
-	if (testPlayer)
-	{
-		testPlayer->angle = 0;
-		testPlayer->dist = 5.0;
-		testPlayer->x = 1.5;
-		testPlayer->y = 1.5;
-		testPlayer->fov = M_PI/2;
-		testPlayer->angleValues = angleValues;
-	}
-	RayEngine_generateAngleValues(WIDTH,testPlayer);
+	Player testPlayer;
+	GameEngine_initPlayer(&testPlayer, 1.5, 11.5, 3*M_PI/2, M_PI/2, 5.0, WIDTH);
 
 	// Demo spritelist with sprites
-	RaySprite spriteList[18];
-	uint8_t spriteListLength = 18;
-	// Entity sprites
-	RayEngine_initSprite(&spriteList[0], &spriteTexs[7], 1.0, 0, 0, 0);
+	Entity entityList[10];
+	uint8_t numEntities = 10;
+	GameEngine_initEntity(&entityList[0], 0, 0, 0, 0, &spriteTexs[7], &shadowTex);
 	for (int s = 1; s < 9; s++)
 	{
-		RayEngine_initSprite(&spriteList[s], &spriteTexs[7], 0.4, 0, 0, 0);
+		GameEngine_initEntity(&entityList[s], 0, 0, 0, 0, &spriteTexs[7], &shadowTex);
+		GameEngine_scaleEntity(&entityList[s], 0.5);
 	}
-	// Shadow sprites
-	for (int s = 9; s < 18; s++)
-	{
-		RayEngine_initSprite(&spriteList[s], &shadowTex, 0, 0, 0, -0.5);
-		spriteList[s].alphaNum = 0.5;
-	}
+	GameEngine_initEntity(&entityList[9], 7.5, 10.5, -0.375, 0, &spriteTexs[8], &shadowTex); // Test ball
+	GameEngine_scaleEntity(&entityList[9], 0.25);
+	GameEngine_moveEntity(&entityList[0], 2.5, 7.5, 1); // Big Thonker
 
 	// Allocate depth buffer 
 	RayBuffer rayBuffer[WIDTH];
@@ -284,13 +281,15 @@ int main(int argc, char* argv[])
 	// Generate background texture
 	uint32_t texPixels[WIDTH * HEIGHT];
 	SDL_Rect gradientRectTop = {0,0,WIDTH,HEIGHT/2};
-	SDL_Color colorTop1 = {189,255,255,255};//{255,100,100,255};
-	SDL_Color colorTop2 = {77,150,154,255};//{0,0,100,255};
-	// SDL_Color colorTop1 = {0x5c,0x57,0xff,255};
-	// SDL_Color colorTop2 = {0xff,0xff,0xff,255};
+	//SDL_Color colorTop1 = {189,255,255,255};//{255,100,100,255};
+	//SDL_Color colorTop2 = {77,150,154,255};//{0,0,100,255};
+	SDL_Color colorTop1 = {0x5c,0x57,0xff,255};
+	SDL_Color colorTop2 = {0xff,0x40,0x00,255};
 	SDL_Rect gradientRectBottom = {0,HEIGHT/2,WIDTH,HEIGHT/2};
-	SDL_Color colorBottom1 = {159,197,182,255};//{50,50,100,255};
-	SDL_Color colorBottom2 = {79,172,135,255};//{190,190,190,255};
+	//SDL_Color colorBottom1 = {159,197,182,255};
+	//SDL_Color colorBottom2 = {79,172,135,255};
+	SDL_Color colorBottom1 = {50,50,100,255};
+	SDL_Color colorBottom2 = {150,150,190,255};
 	PixBuffer_clearBuffer(&buffer);
 	PixBuffer_drawHorizGradient(&buffer,&gradientRectTop, colorTop1, colorTop2);
 	PixBuffer_drawHorizGradient(&buffer,&gradientRectBottom, colorBottom1, colorBottom2);
@@ -310,28 +309,14 @@ int main(int argc, char* argv[])
 				quit = 1;
 			}
 		}
-		RayEngine_updatePlayer(testPlayer,&testMap,dt);
-		// Sprite updates
+		GameEngine_updatePlayer(&testPlayer, &testMap, dt);
+		// Sprite movement
 		for (int s = 1; s < 9; s++)
 		{
-			spriteList[s].x = 2.5 + cos((double)runTime/1000+(s-1)*M_PI/4);
-			spriteList[s].y = 7.5 + sin((double)runTime/1000+(s-1)*M_PI/4);
-			spriteList[s].frameNum = (runTime)%30;
-			spriteList[s+9].scaleFactor = exp(-(spriteList[s].h+0.5))*spriteList[s].scaleFactor;
-			spriteList[s+9].x = spriteList[s].x;
-			spriteList[s+9].y = spriteList[s].y;
+			GameEngine_moveEntity(&entityList[s], 2.5 + cos((double)runTime/1000+(s-1)*M_PI/4), 7.5 + sin((double)runTime/1000+(s-1)*M_PI/4), (s-1) * 0.2);
+			entityList[s].sprite.frameNum = (runTime)%30;
 		}
-		spriteList[0].x = 2.5;
-		spriteList[0].y = 7.5;
-		spriteList[0].frameNum = 29-(runTime/100)%30;
-		spriteList[9].scaleFactor = exp(-(spriteList[0].h+0.5))*spriteList[0].scaleFactor;
-		spriteList[9].x = spriteList[0].x;
-		spriteList[9].y = spriteList[0].y;
-
-		// DEBUG PLAYER VALUES
-		double playerStartAngle = testPlayer->angle - testPlayer->fov / 2.0;
-		double playerEndAngle = testPlayer->angle + testPlayer->fov / 2.0;
-		double sprite1Angle = atan2(spriteList[0].y - testPlayer->y, spriteList[0].x - testPlayer->x);
+		entityList[0].sprite.frameNum = 29-(runTime/100)%30;
 
 		// Clear, draw line and update
 		SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
@@ -340,9 +325,15 @@ int main(int argc, char* argv[])
 		PixBuffer_clearBuffer(&buffer);
 		memcpy(buffer.pixels, texPixels, sizeof(uint32_t) * WIDTH * HEIGHT);
 		//RayEngine_raycastRender(&buffer, testPlayer, WIDTH, HEIGHT, &testMap, 0.01);
-		RayEngine_raycastCompute(rayBuffer, testPlayer, WIDTH, HEIGHT, &testMap, 0.01, &boxTex);
-		RayEngine_raySpriteCompute(rayBuffer, testPlayer, WIDTH, HEIGHT, 0.01, spriteList, spriteListLength);
-		RayEngine_texRaycastRender(&buffer, WIDTH, HEIGHT, rayBuffer, testPlayer->dist);
+		RayEngine_raycastCompute(rayBuffer, &(testPlayer.camera), WIDTH, HEIGHT, &testMap, 0.01, &mapTex);
+		// Update & draw sprites
+		for (uint8_t s = 0; s < numEntities; s++)
+		{
+			GameEngine_updateEntity(&entityList[s]);
+			RayEngine_raySpriteCompute(rayBuffer, &(testPlayer.camera), WIDTH, HEIGHT, 0.01, entityList[s].sprite);
+			RayEngine_raySpriteCompute(rayBuffer, &(testPlayer.camera), WIDTH, HEIGHT, 0.01, entityList[s].shadow);
+		}
+		RayEngine_texRaycastRender(&buffer, WIDTH, HEIGHT, rayBuffer, testPlayer.camera.dist);
 		PixBuffer_orderDither256(&buffer, 5);
 		// Note: between 4 & 10 is good for 16 color palette
 		SDL_UpdateTexture(drawTex, NULL, buffer.pixels, sizeof(uint32_t) * WIDTH);
@@ -359,12 +350,6 @@ int main(int argc, char* argv[])
 
 
 	// Clean up and quit
-
-	//deleteMap(testMap, testMapWidth, testMapHeight);
-	free(testPlayer);
-	//testMap = NULL;
-	testPlayer = NULL;
-
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
 	renderer = NULL;

@@ -25,18 +25,18 @@ void RayEngine_generateMap(Map* newMap, unsigned char* charList, int width, int 
 	newMap->border = border;
 }
 
-void RayEngine_initSprite(RaySprite* newSprite, RayTex* texture, double scaleFactor, double x, double y, double h)
+void RayEngine_initSprite(RaySprite* newSprite, RayTex* texture, double scaleFactor, double alphaNum, double x, double y, double h)
 {
 	newSprite->texture = texture;
 	newSprite->scaleFactor = scaleFactor;
+	newSprite->alphaNum = alphaNum;
 	newSprite->x = x;
 	newSprite->y = y;
 	newSprite->h = h;
 	newSprite->frameNum = 0;
-	newSprite->alphaNum = 1.0;
 }
 
-void RayEngine_drawMinimap(PixBuffer* buffer, Player* player, unsigned int width, unsigned int height, Map* map, int blockSize)
+void RayEngine_drawMinimap(PixBuffer* buffer, Camera* camera, unsigned int width, unsigned int height, Map* map, int blockSize)
 {
 	SDL_Rect mapRect;
 	mapRect.w = map->width * blockSize;
@@ -64,10 +64,10 @@ void RayEngine_drawMinimap(PixBuffer* buffer, Player* player, unsigned int width
 		}
 	}
 	// Draws view fulcrum
-	//SDL_RenderDrawLine(renderer, player->x * blockSize + mapRect.x, player->y * blockSize + mapRect.y, (player->x + player->dist * cos(player->angle - player->fov / 2)) * blockSize + mapRect.x, (player->y + player->dist * sin(player->angle - player->fov / 2)) * blockSize + mapRect.y);
-	//SDL_RenderDrawLine(renderer, player->x * blockSize + mapRect.x, player->y * blockSize + mapRect.y, (player->x + player->dist * cos(player->angle + player->fov / 2)) * blockSize + mapRect.x, (player->y + player->dist * sin(player->angle + player->fov / 2)) * blockSize + mapRect.y);
-	SDL_Color playerCol = {0xFF, 0xFF, 0xFF, 0xFF};
-	PixBuffer_drawPix(buffer, player->x * blockSize + mapRect.x, player->y * blockSize + mapRect.y, playerCol);
+	//SDL_RenderDrawLine(renderer, camera->x * blockSize + mapRect.x, camera->y * blockSize + mapRect.y, (camera->x + camera->dist * cos(camera->angle - camera->fov / 2)) * blockSize + mapRect.x, (camera->y + camera->dist * sin(camera->angle - camera->fov / 2)) * blockSize + mapRect.y);
+	//SDL_RenderDrawLine(renderer, camera->x * blockSize + mapRect.x, camera->y * blockSize + mapRect.y, (camera->x + camera->dist * cos(camera->angle + camera->fov / 2)) * blockSize + mapRect.x, (camera->y + camera->dist * sin(camera->angle + camera->fov / 2)) * blockSize + mapRect.y);
+	SDL_Color cameraCol = {0xFF, 0xFF, 0xFF, 0xFF};
+	PixBuffer_drawPix(buffer, camera->x * blockSize + mapRect.x, camera->y * blockSize + mapRect.y, cameraCol);
 }
 
 void RayEngine_deleteMap(unsigned char** map, int width, int height)
@@ -79,19 +79,19 @@ void RayEngine_deleteMap(unsigned char** map, int width, int height)
 	free(map);
 }
 
-void RayEngine_generateAngleValues(uint32_t width, Player* player)
+void RayEngine_generateAngleValues(uint32_t width, Camera* camera)
 {
-	double adjFactor = (double)width / (2 * tan(player->fov / 2));
-	player->angleValues[0] = atan((width / 2) / adjFactor) - atan((width / 2 - 1) / adjFactor);
+	double adjFactor = (double)width / (2 * tan(camera->fov / 2));
+	camera->angleValues[0] = atan((width / 2) / adjFactor) - atan((width / 2 - 1) / adjFactor);
 	for (uint32_t i = 1; i < width; i++)
 	{
 		if(i < width / 2)
 		{
-			player->angleValues[i] = player->angleValues[i-1] + atan((width / 2 - i) / adjFactor) - atan((width / 2 - i - 1) / adjFactor);
+			camera->angleValues[i] = camera->angleValues[i-1] + atan((width / 2 - i) / adjFactor) - atan((width / 2 - i - 1) / adjFactor);
 		}
 		else
 		{
-			player->angleValues[i] = player->angleValues[i-1] + atan((i + 1 - width / 2) / adjFactor) - atan((i - width / 2) / adjFactor);
+			camera->angleValues[i] = camera->angleValues[i-1] + atan((i + 1 - width / 2) / adjFactor) - atan((i - width / 2) / adjFactor);
 		}
 	}
 }
@@ -109,85 +109,82 @@ int raycastCompare(void *buffer1, void *buffer2)
 	}
 }
 
-void RayEngine_raySpriteCompute(RayBuffer* rayBuffer, Player* player, uint32_t width, uint32_t height, double resolution, RaySprite* spriteList, uint8_t numSprites)
+void RayEngine_raySpriteCompute(RayBuffer* rayBuffer, Camera* camera, uint32_t width, uint32_t height, double resolution, RaySprite sprite)
 {
 	// Establish starting angle and sweep per column
-	double startAngle = player->angle - player->fov / 2.0;
-	//double adjFactor = width / (2 * tan(player->fov / 2));
+	double startAngle = camera->angle - camera->fov / 2.0;
+	//double adjFactor = width / (2 * tan(camera->fov / 2));
 	double scaleFactor = (double)width / (double)height * 2.4;
 	// Generate screenspace angle mapping constant
-	const double angleMapConstant = (double)(width) / (2*tan(player->fov/2));
-	// Iterate through sprite list and render to buffer
-	for (uint8_t s = 0; s < numSprites; s++)
+	const double angleMapConstant = (double)(width) / (2*tan(camera->fov/2));
+	// Render sprite to buffer
+	double spriteAngle = atan2(sprite.y - camera->y, sprite.x - camera->x);
+	double screenAngle = spriteAngle - camera->angle;
+	//printf("Sprite %d screen angle: %f\n", s, screenAngle);
+	double spriteDist = cos(screenAngle) * (sqrt((camera->x - sprite.x)*(camera->x - sprite.x) + (camera->y - sprite.y)*(camera->y - sprite.y))/scaleFactor);
+	// Depth check, can't be on or behind camera
+	if (spriteDist > 0)
 	{
-		double spriteAngle = atan2(spriteList[s].y - player->y, spriteList[s].x - player->x);
-		double screenAngle = spriteAngle - player->angle;
-		//printf("Sprite %d screen angle: %f\n", s, screenAngle);
-		double spriteDist = cos(screenAngle) * (sqrt((player->x - spriteList[s].x)*(player->x - spriteList[s].x) + (player->y - spriteList[s].y)*(player->y - spriteList[s].y))/scaleFactor);
-		// Depth check, can't be on or behind player
-		if (spriteDist > 0)
+		// Compute column from screen angle
+		int32_t centerX = (int32_t)width / 2 + (int32_t)(angleMapConstant * tan(screenAngle));
+		// Get width and height
+		int32_t screenHeight;
+		int32_t screenWidth;
+		if (sprite.texture->tileHeight >= sprite.texture->tileWidth)
 		{
-			// Compute column from screen angle
-			int32_t centerX = (int32_t)width / 2 + (int32_t)(angleMapConstant * tan(screenAngle));
-			// Get width and height
-			int32_t screenHeight;
-			int32_t screenWidth;
-			if (spriteList[s].texture->tileHeight >= spriteList[s].texture->tileWidth)
+			screenHeight = (int32_t)((double)height / (spriteDist * 5) * sprite.scaleFactor);
+			screenWidth = (int32_t)((double)screenHeight * ((double)sprite.texture->tileWidth / (double)sprite.texture->tileHeight));
+		}
+		else
+		{
+			screenWidth = (int32_t)((double)height / (spriteDist * 5) * sprite.scaleFactor);
+			screenHeight = (int32_t)((double)screenWidth * ((double)sprite.texture->tileHeight / (double)sprite.texture->tileWidth));
+		}
+		
+		int32_t spriteHeight = (int32_t)(sprite.h * height / (spriteDist * 5)); // I dunno why it's 40
+		int32_t startX = centerX - screenWidth / 2;
+		int32_t endX = startX + screenWidth;
+		int32_t startY = (int32_t)floor((height / 2) - ((double)screenHeight / 2) - spriteHeight);
+		// Write to buffer if in fulcrum
+		if (startX <= (int32_t)width && endX >= 0)
+		{
+			// Iterate through screen columns
+			uint32_t spriteColumn = 0;
+			uint32_t texCoord;
+			for (int32_t i = startX; i < endX; i++)
 			{
-				screenHeight = (int32_t)((double)height / (spriteDist * 5) * spriteList[s].scaleFactor);
-				screenWidth = (int32_t)((double)screenHeight * ((double)spriteList[s].texture->tileWidth / (double)spriteList[s].texture->tileHeight));
-			}
-			else
-			{
-				screenWidth = (int32_t)((double)height / (spriteDist * 5) * spriteList[s].scaleFactor);
-				screenHeight = (int32_t)((double)screenWidth * ((double)spriteList[s].texture->tileHeight / (double)spriteList[s].texture->tileWidth));
-			}
-			
-			int32_t spriteHeight = (int32_t)(spriteList[s].h * height / (spriteDist * 5)); // I dunno why it's 40
-			int32_t startX = centerX - screenWidth / 2;
-			int32_t endX = startX + screenWidth;
-			int32_t startY = (int32_t)floor((height / 2) - ((double)screenHeight / 2) - spriteHeight);
-			// Write to buffer if in fulcrum
-			if (startX <= (int32_t)width && endX >= 0)
-			{
-				// Iterate through screen columns
-				uint32_t spriteColumn = 0;
-				uint32_t texCoord;
-				for (int32_t i = startX; i < endX; i++)
+				if (i >= 0 && i < width && rayBuffer[i].numLayers < 255)
 				{
-					if (i >= 0 && i < width && rayBuffer[i].numLayers < 255)
-					{
-						texCoord = (uint32_t)floor(((double)spriteColumn / (double)screenWidth) * spriteList[s].texture->tileWidth);
-						rayBuffer[i].layers[rayBuffer[i].numLayers].texture = spriteList[s].texture;
-						rayBuffer[i].layers[rayBuffer[i].numLayers].texCoord = texCoord;
-						rayBuffer[i].layers[rayBuffer[i].numLayers].tileNum = spriteList[s].frameNum;
-						rayBuffer[i].layers[rayBuffer[i].numLayers].alphaNum = spriteList[s].alphaNum;
-						rayBuffer[i].layers[rayBuffer[i].numLayers].depth = spriteDist;
-						rayBuffer[i].layers[rayBuffer[i].numLayers].yCoord = startY;
-						rayBuffer[i].layers[rayBuffer[i].numLayers].height = screenHeight;
-						rayBuffer[i].numLayers++;
-					}
-					spriteColumn++;
+					texCoord = (uint32_t)floor(((double)spriteColumn / (double)screenWidth) * sprite.texture->tileWidth);
+					rayBuffer[i].layers[rayBuffer[i].numLayers].texture = sprite.texture;
+					rayBuffer[i].layers[rayBuffer[i].numLayers].texCoord = texCoord;
+					rayBuffer[i].layers[rayBuffer[i].numLayers].tileNum = sprite.frameNum;
+					rayBuffer[i].layers[rayBuffer[i].numLayers].alphaNum = sprite.alphaNum;
+					rayBuffer[i].layers[rayBuffer[i].numLayers].depth = spriteDist;
+					rayBuffer[i].layers[rayBuffer[i].numLayers].yCoord = startY;
+					rayBuffer[i].layers[rayBuffer[i].numLayers].height = screenHeight;
+					rayBuffer[i].numLayers++;
 				}
+				spriteColumn++;
 			}
 		}
 	}
 }
 
-void RayEngine_raycastCompute(RayBuffer* rayBuffer, Player* player, uint32_t width, uint32_t height, Map* map, double resolution, RayTex* texData)
+void RayEngine_raycastCompute(RayBuffer* rayBuffer, Camera* camera, uint32_t width, uint32_t height, Map* map, double resolution, RayTex* texData)
 {
 	// Establish starting angle and sweep per column
-	double startAngle = player->angle - player->fov / 2.0;
-	double adjFactor = width / (2 * tan(player->fov / 2));
+	double startAngle = camera->angle - camera->fov / 2.0;
+	double adjFactor = width / (2 * tan(camera->fov / 2));
 	double scaleFactor = (double)width / (double)height * 2.4;
 	double rayAngle = startAngle;
 	// Sweeeeep for each column
 	#pragma omp parallel for schedule(dynamic,1) private(rayAngle)
 	for (int i = 0; i < width; i++)
 	{
-		rayAngle = startAngle + player->angleValues[i];
-		double rayX = player->x;
-		double rayY = player->y;
+		rayAngle = startAngle + camera->angleValues[i];
+		double rayX = camera->x;
+		double rayY = camera->y;
 		double rayStepX = (resolution) * cos(rayAngle);
 		double rayStepY = (resolution) * sin(rayAngle);
 		double stepLen = (resolution) / scaleFactor;
@@ -195,19 +192,20 @@ void RayEngine_raycastCompute(RayBuffer* rayBuffer, Player* player, uint32_t wid
 		int rayStep = 0;
 		int rayOffX = 0;
 		int rayOffY = 0;
-		while (rayLen < player->dist)
+		while (rayLen < camera->dist)
 		{
 			int coordX = (int)floor(rayX+rayOffX);
 			int coordY = (int)floor(rayY+rayOffY);
 			if ((coordX >= 0.0 && coordY >= 0.0) && (coordX < map->width && coordY < map->height) && (map->data[coordY * map->width + coordX] != 0))
 			{
+				uint8_t mapTile = map->data[coordY * map->width + coordX];
 				SDL_Color colorDat = {0,0,0,255};
 				if (rayLen != 0)
 				{
 					uint8_t side;
 					double newX;
 					double newY;
-					double rayLen = sqrt(getInterDist(rayStepX, rayStepY, player->x + rayOffX, player->y + rayOffY, (double)coordX, (double)coordY, &newX, &newY, &side))/scaleFactor;
+					double rayLen = sqrt(getInterDist(rayStepX, rayStepY, camera->x + rayOffX, camera->y + rayOffY, (double)coordX, (double)coordY, &newX, &newY, &side))/scaleFactor;
 					uint32_t texCoord;
 					if (side)
 					{
@@ -217,21 +215,21 @@ void RayEngine_raycastCompute(RayBuffer* rayBuffer, Player* player, uint32_t wid
 					{
 						texCoord = (uint32_t)floor((newY - coordY) * texData->tileWidth);
 					}
-					double depth = (double)(rayLen * cos(rayAngle - player->angle));
-					double colorGrad = (depth) / player->dist;
+					double depth = (double)(rayLen * cos(rayAngle - camera->angle));
+					double colorGrad = (depth) / camera->dist;
 					double drawHeight = (double)(height / (depth * 10));
 					SDL_Color fadeColor = {77,150,154,255};
 					double jumpHeight = 1;//2 + sin(SDL_GetTicks()/1000.0);
 					//PixBuffer_drawTexColumn(buffer, i, (int)(((double)height / 2.0 - drawHeight)/jumpHeight + height * (1.0 - 1.0/jumpHeight)), (int)drawHeight*2, texData, texCoord, colorGrad, fadeColor);
 					rayBuffer[i].layers[rayBuffer[i].numLayers].texture = texData;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].texCoord = texCoord;
-					rayBuffer[i].layers[rayBuffer[i].numLayers].tileNum = 0;
+					rayBuffer[i].layers[rayBuffer[i].numLayers].tileNum = mapTile - 1;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].alphaNum = 1;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].depth = depth;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].yCoord = (int32_t)(((double)height / 2.0 - drawHeight)/jumpHeight + height * (1.0 - 1.0/jumpHeight));
 					rayBuffer[i].layers[rayBuffer[i].numLayers].height = (int32_t)drawHeight*2;
 				}
-				else //Player is in column
+				else //Camera is in column
 				{
 					//PixBuffer_drawColumn(buffer, i, 0, height, colorDat);
 					rayBuffer[i].layers[rayBuffer[i].numLayers].texture = NULL;
@@ -269,20 +267,20 @@ void RayEngine_raycastCompute(RayBuffer* rayBuffer, Player* player, uint32_t wid
 	}
 }
 
-void RayEngine_raycastRender(PixBuffer* buffer,  Player* player, uint32_t width, uint32_t height, Map* map, double resolution)
+void RayEngine_raycastRender(PixBuffer* buffer,  Camera* camera, uint32_t width, uint32_t height, Map* map, double resolution)
 {
 	// Establish starting angle and sweep per column
-	double startAngle = player->angle - player->fov / 2.0;
-	double adjFactor = width / (2 * tan(player->fov / 2));
+	double startAngle = camera->angle - camera->fov / 2.0;
+	double adjFactor = width / (2 * tan(camera->fov / 2));
 	double scaleFactor = (double)width / (double)height * 2.4;
 	double rayAngle = startAngle;
 	// Sweeeeep for each column
 	#pragma omp parallel for schedule(dynamic,1) private(rayAngle)
 	for (int i = 0; i < width; i++)
 	{
-		rayAngle = startAngle + player->angleValues[i];
-		double rayX = player->x;
-		double rayY = player->y;
+		rayAngle = startAngle + camera->angleValues[i];
+		double rayX = camera->x;
+		double rayY = camera->y;
 		double rayStepX = (resolution) * cos(rayAngle);
 		double rayStepY = (resolution) * sin(rayAngle);
 		double stepLen = (resolution) / scaleFactor;
@@ -290,7 +288,7 @@ void RayEngine_raycastRender(PixBuffer* buffer,  Player* player, uint32_t width,
 		int rayStep = 0;
 		int rayOffX = 0;
 		int rayOffY = 0;
-		while (rayLen < player->dist)
+		while (rayLen < camera->dist)
 		{
 			int coordX = (int)floor(rayX+rayOffX);
 			int coordY = (int)floor(rayY+rayOffY);
@@ -302,9 +300,9 @@ void RayEngine_raycastRender(PixBuffer* buffer,  Player* player, uint32_t width,
 					double newX;
 					double newY;
 					uint8_t side;
-					double rayLen = sqrt(getInterDist(rayStepX, rayStepY, player->x + rayOffX, player->y + rayOffY, (double)coordX, (double)coordY, &newX, &newY, &side))/scaleFactor;
-					double depth = (double)(rayLen * cos(rayAngle - player->angle));
-					double colorGrad = (player->dist - depth) / player->dist;
+					double rayLen = sqrt(getInterDist(rayStepX, rayStepY, camera->x + rayOffX, camera->y + rayOffY, (double)coordX, (double)coordY, &newX, &newY, &side))/scaleFactor;
+					double depth = (double)(rayLen * cos(rayAngle - camera->angle));
+					double colorGrad = (camera->dist - depth) / camera->dist;
 					if (colorGrad < 0 || colorGrad > 1)
 					{
 						colorGrad = 0;
@@ -345,7 +343,7 @@ void RayEngine_raycastRender(PixBuffer* buffer,  Player* player, uint32_t width,
 
 void RayEngine_texRaycastRender(PixBuffer* buffer, uint32_t width, uint32_t height, RayBuffer* rayBuffer, double renderDepth)
 {
-	SDL_Color fadeColor = {77,150,154,255};
+	SDL_Color fadeColor = {50,50,100,0};
 	SDL_Color colorDat = {0,0,0,255};
 	// For each screenwidth column
 	for (int i = 0; i < width; i++)
@@ -414,75 +412,4 @@ double getInterDist(double dx, double dy, double xi, double yi, double coordX, d
 		*newY = coordY + 1;
 	}
 	return minDist;
-}
-
-void RayEngine_updatePlayer(Player* player, Map* map, double dt)
-{
-	int borderWidth = 2;
-	keys = SDL_GetKeyboardState(NULL);
-	if (keys[SDL_SCANCODE_W]||keys[SDL_SCANCODE_S])
-	{
-		double dx = 2 * dt * cos(player->angle) / (2 - keys[SDL_SCANCODE_LSHIFT] * 1);
-		double dy = 2 * dt * sin(player->angle) / (2 - keys[SDL_SCANCODE_LSHIFT] * 1);
-		int oldX = (int)floor(player->x);
-		int oldY = (int)floor(player->y);
-		int newX;
-		int newY;
-		double changeX;
-		double changeY;
-		if (keys[SDL_SCANCODE_W])
-		{
-			newX = (int)floor(player->x+dx);
-			changeX = dx;
-			newY = (int)floor(player->y+dy);
-			changeY = dy;
-		}
-		else
-		{
-			newX = (int)floor(player->x-dx);
-			changeX = -dx;
-			newY = (int)floor(player->y-dy);
-			changeY = -dy;
-		}
-		if (newX < -map->border)
-		{
-			newX += map->width + map->border * 2;
-			changeX += map->width + map->border * 2;
-		}
-		else if (newX >= map->width + map->border)
-		{
-			newX -= map->width + map->border * 2;
-			changeX -= map->width + map->border * 2;
-		}
-		if (newY < -map->border)
-		{
-			newY += map->height + map->border*2;
-			changeY += map->height + map->border*2;
-		}
-		else if (newY >= map->height + map->border)
-		{
-			newY -= map->height + map->border*2;
-			changeY -= map->height + map->border*2;
-		}
-		if (((newX < 0 || newX >= map->width) || (oldY < 0 || oldY >= map->height)) || map->data[oldY*map->width+newX] == 0)
-				player->x += changeX;
-		if (((newY < 0 || newY >= map->height) || (oldX < 0 || oldX >= map->width)) || map->data[newY*map->width+oldX] == 0)
-				player->y += changeY;
-	}
-	if (keys[SDL_SCANCODE_A])
-	{
-		player->angle -= dt;
-	}
-	else if (keys[SDL_SCANCODE_D])
-	{
-		player->angle += dt;
-	}
-	if (player->angle >= (2 * M_PI))
-	{
-		player->angle -= (2 * M_PI);
-	}
-	else if (player->angle < 0)
-	{
-		player->angle += (2 * M_PI);
-	}
 }

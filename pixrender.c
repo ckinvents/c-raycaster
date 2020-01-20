@@ -80,9 +80,17 @@ void PixBuffer_drawTexColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h
         int a = (int)(pix & 0xFF);
         if (a)
         {
+            int dr = targetColor.r - r;
+            int dg = targetColor.g - g;
+            int db = targetColor.b - b;
+            int da = targetColor.a - a;
+            r += (int)((double)dr * fadePercent);
+            g += (int)((double)dg * fadePercent);
+            b += (int)((double)db * fadePercent);
+            a += (int)((double)da * fadePercent);
             if (alphaNum != 0 && alphaNum != 1) // Alpha transparency, compute alpha based on array colors
             {
-                double alpha = 255.0/((double)a) * alphaNum;
+                double alpha = 255.0/((double)a) * (alphaNum);
                 uint32_t oldPix = buffer->pixels[(i+y)*buffer->width+x];
                 int oldR = (int)(oldPix >> 3*8);
                 int oldG = (int)((oldPix >> 2*8) & 0xFF);
@@ -91,12 +99,6 @@ void PixBuffer_drawTexColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h
                 g = (int)((double)g * alpha + (double)oldG * (1-alpha));
                 b = (int)((double)b * alpha + (double)oldB * (1-alpha));
             }
-            int dr = targetColor.r - r;
-            int dg = targetColor.g - g;
-            int db = targetColor.b - b;
-            r += (int)((double)dr * fadePercent);
-            g += (int)((double)dg * fadePercent);
-            b += (int)((double)db * fadePercent);
             buffer->pixels[(i+y)*buffer->width+x] = getColor(r,g,b,0xff);
         }
     }
