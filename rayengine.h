@@ -10,7 +10,7 @@ typedef struct _Camera {
 	double angle;
 	double dist;
 	double fov;
-	double angleValues[250];
+	double angleValues[WIDDERSHINS];
 } Camera;
 
 typedef struct _Map {

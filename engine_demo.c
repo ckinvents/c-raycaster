@@ -7,8 +7,8 @@
 #include "assets/asset_list.h"
 
 #define SCALE 4
-const unsigned int WIDTH = 1000/SCALE;
-const unsigned int HEIGHT = 800/SCALE;
+const unsigned int WIDTH = WIDDERSHINS/SCALE;
+const unsigned int HEIGHT = TURNWISE/SCALE;
 #define MAP_SCALE 1
 #define MAP_WIDTH 10
 #define MAP_HEIGHT 13
@@ -41,12 +41,12 @@ int main(int argc, char* argv[])
 	unsigned char testMapChar[MAP_WIDTH*MAP_HEIGHT] = {
 		2,2,2,2,2,3,3,3,3,3,
 		2,0,0,0,2,3,0,0,0,3,
-		1,0,5,0,2,3,0,0,0,3,
+		2,0,5,0,2,3,0,0,0,3,
 		2,0,0,0,0,0,0,0,0,3,
 		2,2,2,2,2,3,3,0,3,3,
 		6,6,6,6,6,0,4,0,4,0,
 		6,0,0,0,6,0,4,0,4,0,
-		6,0,8,0,6,0,4,0,4,0,
+		6,0,1,0,6,0,4,0,4,0,
 		0,0,0,0,6,4,4,0,4,4,
 		6,0,0,0,6,4,0,0,0,4,
 		0,0,0,0,0,0,0,0,0,4,
@@ -200,34 +200,34 @@ int main(int argc, char* argv[])
 
 	// Initialize sprite assets
 	RayTex spriteTexs[9];
-	spriteTexs[0].pixData = cono_data;
-	spriteTexs[0].tileCount = 1;
-	spriteTexs[0].tileHeight = 128;
-	spriteTexs[0].tileWidth = 128;
-	spriteTexs[1].pixData = droptips_data;
-	spriteTexs[1].tileCount = 1;
-	spriteTexs[1].tileHeight = 128;
-	spriteTexs[1].tileWidth = 128;
-	spriteTexs[2].pixData = keule_data;
-	spriteTexs[2].tileCount = 1;
-	spriteTexs[2].tileHeight = 128;
-	spriteTexs[2].tileWidth = 105;
-	spriteTexs[3].pixData = lors_data;
-	spriteTexs[3].tileCount = 1;
-	spriteTexs[3].tileHeight = 128;
-	spriteTexs[3].tileWidth = 122;
-	spriteTexs[4].pixData = spaaace_data;
-	spriteTexs[4].tileCount = 1;
-	spriteTexs[4].tileHeight = 122;
-	spriteTexs[4].tileWidth = 128;
-	spriteTexs[5].pixData = thonking_data;
-	spriteTexs[5].tileCount = 1;
-	spriteTexs[5].tileHeight = 121;
-	spriteTexs[5].tileWidth = 128;
-	spriteTexs[6].pixData = udxs_data;
-	spriteTexs[6].tileCount = 1;
-	spriteTexs[6].tileHeight = 128;
-	spriteTexs[6].tileWidth = 120;
+	// spriteTexs[0].pixData = cono_data;
+	// spriteTexs[0].tileCount = 1;
+	// spriteTexs[0].tileHeight = 128;
+	// spriteTexs[0].tileWidth = 128;
+	// spriteTexs[1].pixData = droptips_data;
+	// spriteTexs[1].tileCount = 1;
+	// spriteTexs[1].tileHeight = 128;
+	// spriteTexs[1].tileWidth = 128;
+	// spriteTexs[2].pixData = keule_data;
+	// spriteTexs[2].tileCount = 1;
+	// spriteTexs[2].tileHeight = 128;
+	// spriteTexs[2].tileWidth = 105;
+	// spriteTexs[3].pixData = lors_data;
+	// spriteTexs[3].tileCount = 1;
+	// spriteTexs[3].tileHeight = 128;
+	// spriteTexs[3].tileWidth = 122;
+	// spriteTexs[4].pixData = spaaace_data;
+	// spriteTexs[4].tileCount = 1;
+	// spriteTexs[4].tileHeight = 122;
+	// spriteTexs[4].tileWidth = 128;
+	// spriteTexs[5].pixData = thonking_data;
+	// spriteTexs[5].tileCount = 1;
+	// spriteTexs[5].tileHeight = 121;
+	// spriteTexs[5].tileWidth = 128;
+	// spriteTexs[6].pixData = udxs_data;
+	// spriteTexs[6].tileCount = 1;
+	// spriteTexs[6].tileHeight = 128;
+	// spriteTexs[6].tileWidth = 120;
 	spriteTexs[7].pixData = spinning_thonk_data;
 	spriteTexs[7].tileCount = 30;
 	spriteTexs[7].tileHeight = 128;
@@ -241,7 +241,7 @@ int main(int argc, char* argv[])
 	// Demo player
 	double angleValues[WIDTH];
 	Player testPlayer;
-	GameEngine_initPlayer(&testPlayer, 1.5, 11.5, 3*M_PI/2, M_PI/2, 5.0, WIDTH);
+	GameEngine_initPlayer(&testPlayer, 1.5, 1.5, 0, M_PI/2, 5.0, WIDTH);
 
 	// Demo spritelist with sprites
 	Entity entityList[10];
@@ -252,8 +252,9 @@ int main(int argc, char* argv[])
 		GameEngine_initEntity(&entityList[s], 0, 0, 0, 0, &spriteTexs[7], &shadowTex);
 		GameEngine_scaleEntity(&entityList[s], 0.5);
 	}
-	GameEngine_initEntity(&entityList[9], 7.5, 10.5, -0.375, 0, &spriteTexs[8], &shadowTex); // Test ball
-	GameEngine_scaleEntity(&entityList[9], 0.25);
+	GameEngine_initEntity(&entityList[9], 7.5, 10.5, -0.375, 0, &spriteTexs[8], &shadowTex); // Test ball -0.375
+	GameEngine_scaleEntity(&entityList[9], 0.25); //0.25
+	entityList[9].sprite.alphaNum = 0.5;
 	GameEngine_moveEntity(&entityList[0], 2.5, 7.5, 1); // Big Thonker
 
 	// Allocate depth buffer 

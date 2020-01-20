@@ -2,6 +2,8 @@
 #define RENDER_H
 
 #include <SDL2/SDL.h>
+#define WIDDERSHINS 1000
+#define TURNWISE 800
 
 typedef struct _PixBuffer {
     uint32_t* pixels;
