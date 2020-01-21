@@ -52,14 +52,24 @@ void GameEngine_updatePlayer(Player* player, Map* map, double dt)
 {
 	int borderWidth = 2;
 	uint8_t* keys = SDL_GetKeyboardState(NULL);
-	if (keys[SDL_SCANCODE_W]||keys[SDL_SCANCODE_S]||keys[SDL_SCANCODE_Q]||keys[SDL_SCANCODE_E])
+	if ((keys[SDL_SCANCODE_W]||keys[SDL_SCANCODE_S]||keys[SDL_SCANCODE_Q]||keys[SDL_SCANCODE_E])&&!((keys[SDL_SCANCODE_W]&&keys[SDL_SCANCODE_S])||keys[SDL_SCANCODE_Q]&&keys[SDL_SCANCODE_E]))
 	{
 		double dx;
 		double dy;
-		if (keys[SDL_SCANCODE_W]||keys[SDL_SCANCODE_S])
+		if ((keys[SDL_SCANCODE_W]||keys[SDL_SCANCODE_S])&&!(keys[SDL_SCANCODE_Q]||keys[SDL_SCANCODE_E]))
 		{
 			dx = 2 * dt * cos(player->angle) / (2 - keys[SDL_SCANCODE_LSHIFT] * 1);
 			dy = 2 * dt * sin(player->angle) / (2 - keys[SDL_SCANCODE_LSHIFT] * 1);
+		}
+		else if ((keys[SDL_SCANCODE_W]&&keys[SDL_SCANCODE_Q])||(keys[SDL_SCANCODE_S]&&keys[SDL_SCANCODE_E]))
+		{
+			dx = 2 * dt * cos(player->angle-M_PI/4) / (2 - keys[SDL_SCANCODE_LSHIFT] * 1);
+			dy = 2 * dt * sin(player->angle-M_PI/4) / (2 - keys[SDL_SCANCODE_LSHIFT] * 1);
+		}
+		else if ((keys[SDL_SCANCODE_S]&&keys[SDL_SCANCODE_Q])||(keys[SDL_SCANCODE_W]&&keys[SDL_SCANCODE_E]))
+		{
+			dx = 2 * dt * cos(player->angle+M_PI/4) / (2 - keys[SDL_SCANCODE_LSHIFT] * 1);
+			dy = 2 * dt * sin(player->angle+M_PI/4) / (2 - keys[SDL_SCANCODE_LSHIFT] * 1);
 		}
 		else
 		{
@@ -72,7 +82,7 @@ void GameEngine_updatePlayer(Player* player, Map* map, double dt)
 		int newY;
 		double changeX;
 		double changeY;
-		if (keys[SDL_SCANCODE_W]||keys[SDL_SCANCODE_E])
+		if ((keys[SDL_SCANCODE_W]||(keys[SDL_SCANCODE_E])&&!(keys[SDL_SCANCODE_S])))
 		{
 			newX = (int)floor(player->x+dx);
 			changeX = dx;

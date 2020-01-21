@@ -199,7 +199,7 @@ int main(int argc, char* argv[])
 	shadowTex.tileWidth = 128;
 
 	// Initialize sprite assets
-	RayTex spriteTexs[9];
+	RayTex spriteTexs[10];
 	// spriteTexs[0].pixData = cono_data;
 	// spriteTexs[0].tileCount = 1;
 	// spriteTexs[0].tileHeight = 128;
@@ -236,12 +236,18 @@ int main(int argc, char* argv[])
 	spriteTexs[8].tileCount = 1;
 	spriteTexs[8].tileWidth = 31;
 	spriteTexs[8].tileHeight = 32;
+	spriteTexs[9].pixData = cursor_data;
+	spriteTexs[9].tileCount = 1;
+	spriteTexs[9].tileWidth = 16;
+	spriteTexs[9].tileHeight = 16;
 
 
+	// View depth
+	double depth = 0.5;
 	// Demo player
 	double angleValues[WIDTH];
 	Player testPlayer;
-	GameEngine_initPlayer(&testPlayer, 1.5, 1.5, 0, M_PI/2, 5.0, WIDTH);
+	GameEngine_initPlayer(&testPlayer, 1.5, 1.5, 0, M_PI/2, depth, WIDTH);
 
 	// Demo spritelist with sprites
 	Entity entityList[10];
@@ -256,6 +262,10 @@ int main(int argc, char* argv[])
 	GameEngine_scaleEntity(&entityList[9], 0.25); //0.25
 	entityList[9].sprite.alphaNum = 0.5;
 	GameEngine_moveEntity(&entityList[0], 2.5, 7.5, 1); // Big Thonker
+
+	// Test cursor sprite
+	RaySprite cursorSprite;
+	RayEngine_initSprite(&cursorSprite, &spriteTexs[9], 1, 0.5, WIDTH/2, HEIGHT/2, 0);
 
 	// Allocate depth buffer 
 	RayBuffer rayBuffer[WIDTH];
@@ -291,9 +301,19 @@ int main(int argc, char* argv[])
 	//SDL_Color colorBottom2 = {79,172,135,255};
 	SDL_Color colorBottom1 = {50,50,100,255};
 	SDL_Color colorBottom2 = {150,150,190,255};
+	// Fog gradient
+	SDL_Color fogFade = {50,50,100,0};
+	SDL_Color fogPrimary = {50,50,100,255};
+	SDL_Rect fogRectBottom = {0,HEIGHT/2+(int)ceil((double)HEIGHT/(depth*10)),WIDTH,(int)ceil((double)HEIGHT/(depth*10))};
+	SDL_Rect fogRectCenter = {0, HEIGHT/2-(int)ceil((double)HEIGHT/(depth*10)),WIDTH, (int)ceil((double)HEIGHT/(depth*10))*2};
+	SDL_Rect fogRectTop = {0,HEIGHT/2-(int)ceil((double)HEIGHT/(depth*10))*2,WIDTH,(int)floor((double)HEIGHT/(depth*10))};
 	PixBuffer_clearBuffer(&buffer);
 	PixBuffer_drawHorizGradient(&buffer,&gradientRectTop, colorTop1, colorTop2);
 	PixBuffer_drawHorizGradient(&buffer,&gradientRectBottom, colorBottom1, colorBottom2);
+	//Render fog
+	PixBuffer_drawRect(&buffer, &fogRectCenter, fogPrimary);
+	PixBuffer_drawHorizGradient(&buffer,&fogRectTop, fogFade, fogPrimary);
+	PixBuffer_drawHorizGradient(&buffer,&fogRectBottom, fogPrimary, fogFade);
 	// Note: between 15 & 20 is good for 16 color palettes
 	PixBuffer_orderDither256(&buffer, 5);
 	memcpy(texPixels, buffer.pixels, sizeof(uint32_t) * WIDTH * HEIGHT);
@@ -335,6 +355,7 @@ int main(int argc, char* argv[])
 			RayEngine_raySpriteCompute(rayBuffer, &(testPlayer.camera), WIDTH, HEIGHT, 0.01, entityList[s].shadow);
 		}
 		RayEngine_texRaycastRender(&buffer, WIDTH, HEIGHT, rayBuffer, testPlayer.camera.dist);
+		RayEngine_draw2DSprite(&buffer, cursorSprite);
 		PixBuffer_orderDither256(&buffer, 5);
 		// Note: between 4 & 10 is good for 16 color palette
 		SDL_UpdateTexture(drawTex, NULL, buffer.pixels, sizeof(uint32_t) * WIDTH);

@@ -53,7 +53,7 @@ void PixBuffer_drawColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h, S
 
 void PixBuffer_drawTexColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h, RayTex* texture, uint8_t tileNum, double alphaNum, uint32_t column, double fadePercent, SDL_Color targetColor)
 {
-    if (y + h < 0)
+    if (y + h < 0 || fadePercent > 1.0)
     {
         return;  // Sorry, messy fix but it works
     }
@@ -69,7 +69,7 @@ void PixBuffer_drawTexColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h
     {
         h = buffer->height - y;
     }
-    #pragma omp parallel for schedule(dynamic,1)
+    //#pragma omp parallel for schedule(dynamic,1)
     for (int32_t i = 0; i < h; i++)
     {
         // Calculate pixel to draw from texture
@@ -87,10 +87,10 @@ void PixBuffer_drawTexColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h
             r += (int)((double)dr * fadePercent);
             g += (int)((double)dg * fadePercent);
             b += (int)((double)db * fadePercent);
-            a += (int)((double)da * fadePercent);
+            //a += (int)((double)da * fadePercent); Doesn't seem to work yet
             if (alphaNum != 0 && alphaNum != 1) // Alpha transparency, compute alpha based on array colors
             {
-                double alpha = 255.0/((double)a) * (alphaNum);
+                double alpha = ((double)a)/255.0 * (alphaNum);
                 uint32_t oldPix = buffer->pixels[(i+y)*buffer->width+x];
                 int oldR = (int)(oldPix >> 3*8);
                 int oldG = (int)((oldPix >> 2*8) & 0xFF);
@@ -116,9 +116,24 @@ void PixBuffer_drawTexColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h
  **/
 void PixBuffer_drawRow(PixBuffer* buffer, uint32_t x, uint32_t y, uint32_t w, SDL_Color color)
 {
+    int r = color.r;
+    int g = color.g;
+    int b = color.b;
+    int a = color.a;
+    double alpha = ((double)(color.a))/255.0;
     for (int32_t i = x; i < w; i++)
     {
-        buffer->pixels[y*buffer->width+i] = getColor(color.r,color.g,color.b,color.a);
+        if (a) // Alpha transparency, compute alpha based on array colors
+        {
+            uint32_t oldPix = buffer->pixels[(y*buffer->width)+(i)];
+            int oldR = (int)(oldPix >> 3*8);
+            int oldG = (int)((oldPix >> 2*8) & 0xFF);
+            int oldB = (int)((oldPix >> 8) & 0xFF);
+            r = (int)((double)(color.r) * alpha + (double)oldR * (1.0-alpha));
+            g = (int)((double)(color.g) * alpha + (double)oldG * (1.0-alpha));
+            b = (int)((double)(color.b) * alpha + (double)oldB * (1.0-alpha));
+            buffer->pixels[y*buffer->width+i] = getColor(r,g,b,0xff);
+        }
     }
 }
 
@@ -152,9 +167,9 @@ void PixBuffer_drawHorizGradient(PixBuffer* buffer, SDL_Rect* rect, SDL_Color co
         double rStep = ((double)colBottom.r - (double)colTop.r) / rect->h;
         double gStep = ((double)colBottom.g - (double)colTop.g) / rect->h;
         double bStep = ((double)colBottom.b - (double)colTop.b) / rect->h;
-        double aStep = (colBottom.a - colTop.a) / rect->h;
+        double aStep = ((double)colBottom.a - (double)colTop.a) / rect->h;
         SDL_Color drawColor;
-        #pragma omp parallel for schedule(dynamic,1) private(drawColor)
+        //#pragma omp parallel for schedule(dynamic,1) private(drawColor)
         for (uint32_t i = 0; i < rect->h; i++)
         {
             if (i < buffer->height)

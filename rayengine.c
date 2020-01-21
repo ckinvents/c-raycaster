@@ -36,6 +36,26 @@ void RayEngine_initSprite(RaySprite* newSprite, RayTex* texture, double scaleFac
 	newSprite->frameNum = 0;
 }
 
+void RayEngine_draw2DSprite(PixBuffer* buffer, RaySprite sprite)
+{
+	// First, compute screen-space sprite dimensions
+	int32_t screenWidth = (int32_t)((double)sprite.texture->tileWidth*sprite.scaleFactor);
+	int32_t screenHeight = (int32_t)((double)sprite.texture->tileHeight*sprite.scaleFactor);
+	int32_t startX = (int32_t)(sprite.x - screenWidth / 2);
+	int32_t startY = (int32_t)(sprite.y - screenHeight / 2);
+	// Then render sprite based on dimensions
+	int32_t columnNum;
+	for (int32_t i = startX; i < startX + screenWidth; i++)
+	{
+		if (i >= 0 && i < buffer->width)
+		{
+			columnNum = (int32_t)((double)sprite.texture->tileWidth * ((double)(i - startX)/screenWidth));
+			SDL_Color dummyColor = {0,0,0,0};
+			PixBuffer_drawTexColumn(buffer, i, startY, screenHeight, sprite.texture, sprite.frameNum, sprite.alphaNum, columnNum, 0, dummyColor);
+		}
+	}
+}
+
 void RayEngine_drawMinimap(PixBuffer* buffer, Camera* camera, unsigned int width, unsigned int height, Map* map, int blockSize)
 {
 	SDL_Rect mapRect;
@@ -360,7 +380,16 @@ void RayEngine_texRaycastRender(PixBuffer* buffer, uint32_t width, uint32_t heig
 		{
 			for (int j = 0; j < rayBuffer[i].numLayers; j++)
 			{
-				double colorGrad = (rayBuffer[i].layers[j].depth) / renderDepth;
+				double colorGrad;
+				double fogConstant = 4.0/5;
+				if (rayBuffer[i].layers[j].depth < (renderDepth*fogConstant))
+				{
+					colorGrad = (rayBuffer[i].layers[j].depth) / (renderDepth*fogConstant);
+				}
+				else
+				{
+					colorGrad = 1.0;
+				}
 				PixBuffer_drawTexColumn(buffer, i, rayBuffer[i].layers[j].yCoord, rayBuffer[i].layers[j].height, rayBuffer[i].layers[j].texture, rayBuffer[i].layers[j].tileNum, rayBuffer[i].layers[j].alphaNum, rayBuffer[i].layers[j].texCoord, colorGrad, fadeColor);
 			}
 		}

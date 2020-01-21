@@ -24,7 +24,7 @@ typedef struct _Map {
 
 typedef struct _RayColumn {
 	RayTex* texture;
-	uint32_t texCoord;
+	uint8_t texCoord;
 	uint8_t tileNum;
 	double alphaNum;
 	double depth;
@@ -33,7 +33,7 @@ typedef struct _RayColumn {
 } RayColumn;
 
 typedef struct _RayBuffer {
-	RayColumn layers[255];
+	RayColumn layers[32];
 	uint8_t numLayers;
 } RayBuffer;
 
@@ -49,6 +49,7 @@ typedef struct _RaySprite {
 
 void RayEngine_generateMap(Map* newMap, unsigned char* charList, int width, int height, int border, SDL_Color* colorData, int numColor);
 void RayEngine_initSprite(RaySprite* newSprite, RayTex* texture, double scaleFactor, double alphaNum, double x, double y, double h);
+void RayEngine_draw2DSprite(PixBuffer* buffer, RaySprite sprite);
 //void RayEngine_drawMinimap(PixBuffer* buffer, Player* player, unsigned int width, unsigned int height, Map* map, int blockSize);
 void RayEngine_deleteMap(unsigned char** map, int width, int height);
 void RayEngine_generateAngleValues(uint32_t width, Camera* camera);
