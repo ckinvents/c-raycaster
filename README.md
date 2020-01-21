@@ -2,7 +2,7 @@
 
 ![Now with sprites!](image.png)
 
-Connor Ennis, 2019
+Connor Ennis, 2019-2020
 
 A basic raycaster engine built in C using SDL2. This is a messy expirement at the moment and more of a learning exercise than anything. I'll be adding more features over time, but for now it has basic functionality and can load simple maps.
 
