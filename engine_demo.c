@@ -5,6 +5,7 @@
 #include "gameengine.h"
 #include "pixrender.h"
 #include "assets/asset_list.h"
+//#include "private_assets/private_asset_list.h"
 
 #define SCALE 4
 const unsigned int WIDTH = WIDDERSHINS/SCALE;
@@ -198,6 +199,13 @@ int main(int argc, char* argv[])
 	shadowTex.tileHeight = 32;
 	shadowTex.tileWidth = 128;
 
+	// Projectile texture
+	RayTex bulletTex;
+	bulletTex.pixData = bullet_data;
+	bulletTex.tileCount = 4;
+	bulletTex.tileHeight = 5;
+	bulletTex.tileWidth = 4;
+
 	// Initialize sprite assets
 	RayTex spriteTexs[10];
 	// spriteTexs[0].pixData = cono_data;
@@ -262,6 +270,10 @@ int main(int argc, char* argv[])
 	GameEngine_scaleEntity(&entityList[9], 0.25); //0.25
 	entityList[9].sprite.alphaNum = 0.5;
 	GameEngine_moveEntity(&entityList[0], 2.5, 7.5, 1); // Big Thonker
+
+	// Test projectiles
+	ProjectileList bullets;
+	GameEngine_initProjectiles(&bullets, 64, &bulletTex, &shadowTex);
 
 	// Test cursor sprite
 	RaySprite cursorSprite;
@@ -338,6 +350,7 @@ int main(int argc, char* argv[])
 			entityList[s].sprite.frameNum = (runTime)%30;
 		}
 		entityList[0].sprite.frameNum = 29-(runTime/100)%30;
+		GameEngine_updateProjectile(&bullets, 64, &testPlayer);
 
 		// Clear, draw line and update
 		SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
@@ -353,6 +366,11 @@ int main(int argc, char* argv[])
 			GameEngine_updateEntity(&entityList[s]);
 			RayEngine_raySpriteCompute(rayBuffer, &(testPlayer.camera), WIDTH, HEIGHT, 0.01, entityList[s].sprite);
 			RayEngine_raySpriteCompute(rayBuffer, &(testPlayer.camera), WIDTH, HEIGHT, 0.01, entityList[s].shadow);
+		}
+		for (uint8_t s = 0; s < 64; s++)
+		{
+			RayEngine_raySpriteCompute(rayBuffer, &(testPlayer.camera), WIDTH, HEIGHT, 0.01, bullets.projectiles[s].sprite);
+			RayEngine_raySpriteCompute(rayBuffer, &(testPlayer.camera), WIDTH, HEIGHT, 0.01, bullets.projectiles[s].sprite);
 		}
 		RayEngine_texRaycastRender(&buffer, WIDTH, HEIGHT, rayBuffer, testPlayer.camera.dist);
 		RayEngine_draw2DSprite(&buffer, cursorSprite);

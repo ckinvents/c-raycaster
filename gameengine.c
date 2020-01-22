@@ -19,6 +19,8 @@ void GameEngine_initPlayer(Player* player, double x, double y, double angle, dou
 	player->angle = angle;
 	player->health = 0; //PLACEHOLDER
 	player->state = 0; //PLACEHOLDER
+	player->spacePressed = 0;
+	player->coolDown = 0;
 	player->camera.dist = viewDist;
 	player->camera.fov = fov;
 	RayEngine_generateAngleValues(screenWidth, &(player->camera));
@@ -34,6 +36,15 @@ void GameEngine_initEntity(Entity* entity, double x, double y, double h, double 
 	entity->state = 0; //PLACEHOLDER
 	RayEngine_initSprite(&(entity->sprite), spriteTex, 1.0, 1.0, x, y, h);
 	RayEngine_initSprite(&(entity->shadow), shadowTex, 0, 0.5, x, y, -0.5);
+}
+
+void GameEngine_initProjectiles(ProjectileList* projectiles, uint32_t numProjectile, RayTex* spriteTex, RayTex* shadowTex)
+{
+	for (int i = 0; i < numProjectile; i++)
+	{
+		GameEngine_initEntity(&projectiles->projectiles[i], -1000, -1000, -0.5, 0, spriteTex, shadowTex);
+		projectiles->projectiles[i].sprite.scaleFactor = 0.1;
+	}
 }
 
 void GameEngine_moveEntity(Entity* entity, double x, double y, double h)
@@ -151,4 +162,56 @@ void GameEngine_updateEntity(Entity* entity)
 	entity->shadow.x = entity->x;
 	entity->shadow.y = entity->y;
 	entity->shadow.scaleFactor = exp(-(entity->h+0.5))*(entity->sprite.scaleFactor);
+}
+
+void GameEngine_updateProjectile(ProjectileList* projectiles, uint32_t numProjectile, Player* player)
+{
+	double velocity = 0.05;
+	// First, see if space key pressed
+	uint8_t* keys = SDL_GetKeyboardState(NULL);
+	// Hasn't yet fired
+	if (keys[SDL_SCANCODE_SPACE] && !player->spacePressed)
+	{
+		for (int i = 0; i < numProjectile; i++)
+		{
+			if (projectiles->projectiles[i].state == 0)
+			{
+				GameEngine_moveEntity(&projectiles->projectiles[i], player->x - 0.1 * sin(player->angle), player->y + 0.1 * cos(player->angle), -0.1);
+				projectiles->projectiles[i].angle = player->angle;
+				projectiles->projectiles[i].state = 1;
+				projectiles->projectiles[i].sprite.frameNum = 1;
+				player->spacePressed = 1;
+				break;
+			}
+		}
+	}
+	else if (!keys[SDL_SCANCODE_SPACE])
+	{
+		player->spacePressed = 0;
+	}
+	//printf("spacePressed: %d\n", player->spacePressed);
+	// Update bullets
+	for (int i = 0; i < numProjectile; i++)
+	{
+		if (projectiles->projectiles[i].state == 1)
+		{
+			projectiles->projectiles[i].x += velocity * cos(projectiles->projectiles[i].angle);
+			projectiles->projectiles[i].y += velocity * sin(projectiles->projectiles[i].angle);
+			if ((projectiles->projectiles[i].angle - player->angle > M_PI/2) || (projectiles->projectiles[i].angle - player->angle < -M_PI/2))
+			{
+				projectiles->projectiles[i].sprite.frameNum = 1;
+			}
+			else
+			{
+				projectiles->projectiles[i].sprite.frameNum = 1;
+			}
+			if (sqrt((projectiles->projectiles[i].x - player->x)*(projectiles->projectiles[i].x - player->x) + (projectiles->projectiles[i].y - player->y)*(projectiles->projectiles[i].y - player->y)) > player->camera.dist)
+			{
+				projectiles->projectiles[i].state = 0;
+				projectiles->projectiles[i].x = -1000;
+				projectiles->projectiles[i].y = -1000;
+			}
+			GameEngine_updateEntity(&projectiles->projectiles[i]);
+		}
+	}
 }

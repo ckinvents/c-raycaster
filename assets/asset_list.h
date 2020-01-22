@@ -2,6 +2,7 @@
 #include "ball.h"
 #include "blox.h"
 #include "box.h"
+#include "bullet.h"
 #include "cursor.h"
 #include "shadow.h"
 #include "spinning_thonk.h"
