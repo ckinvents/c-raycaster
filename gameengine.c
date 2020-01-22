@@ -56,25 +56,26 @@ void GameEngine_updatePlayer(Player* player, Map* map, double dt)
 	{
 		double dx;
 		double dy;
+		double speedFactor = (1 + keys[SDL_SCANCODE_LSHIFT] * 1.5);
 		if ((keys[SDL_SCANCODE_W]||keys[SDL_SCANCODE_S])&&!(keys[SDL_SCANCODE_Q]||keys[SDL_SCANCODE_E]))
 		{
-			dx = 2 * dt * cos(player->angle) / (2 - keys[SDL_SCANCODE_LSHIFT] * 1);
-			dy = 2 * dt * sin(player->angle) / (2 - keys[SDL_SCANCODE_LSHIFT] * 1);
+			dx = 2 * dt * cos(player->angle) * speedFactor;
+			dy = 2 * dt * sin(player->angle) * speedFactor;
 		}
 		else if ((keys[SDL_SCANCODE_W]&&keys[SDL_SCANCODE_Q])||(keys[SDL_SCANCODE_S]&&keys[SDL_SCANCODE_E]))
 		{
-			dx = 2 * dt * cos(player->angle-M_PI/4) / (2 - keys[SDL_SCANCODE_LSHIFT] * 1);
-			dy = 2 * dt * sin(player->angle-M_PI/4) / (2 - keys[SDL_SCANCODE_LSHIFT] * 1);
+			dx = 2 * dt * cos(player->angle-M_PI/4) * speedFactor;
+			dy = 2 * dt * sin(player->angle-M_PI/4) * speedFactor;
 		}
 		else if ((keys[SDL_SCANCODE_S]&&keys[SDL_SCANCODE_Q])||(keys[SDL_SCANCODE_W]&&keys[SDL_SCANCODE_E]))
 		{
-			dx = 2 * dt * cos(player->angle+M_PI/4) / (2 - keys[SDL_SCANCODE_LSHIFT] * 1);
-			dy = 2 * dt * sin(player->angle+M_PI/4) / (2 - keys[SDL_SCANCODE_LSHIFT] * 1);
+			dx = 2 * dt * cos(player->angle+M_PI/4) * speedFactor;
+			dy = 2 * dt * sin(player->angle+M_PI/4) * speedFactor;
 		}
 		else
 		{
-			dx = 2 * dt * cos(player->angle+M_PI/2) / (2 - keys[SDL_SCANCODE_LSHIFT] * 1);
-			dy = 2 * dt * sin(player->angle+M_PI/2) / (2 - keys[SDL_SCANCODE_LSHIFT] * 1);
+			dx = 2 * dt * cos(player->angle+M_PI/2) * speedFactor;
+			dy = 2 * dt * sin(player->angle+M_PI/2) * speedFactor;
 		}
 		int oldX = (int)floor(player->x);
 		int oldY = (int)floor(player->y);

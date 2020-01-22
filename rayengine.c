@@ -212,13 +212,15 @@ void RayEngine_raycastCompute(RayBuffer* rayBuffer, Camera* camera, uint32_t wid
 		int rayStep = 0;
 		int rayOffX = 0;
 		int rayOffY = 0;
-		while (rayLen < camera->dist)
+		int collisions = 0;
+		while (rayLen < camera->dist && collisions < 3)
 		{
 			int coordX = (int)floor(rayX+rayOffX);
 			int coordY = (int)floor(rayY+rayOffY);
 			if ((coordX >= 0.0 && coordY >= 0.0) && (coordX < map->width && coordY < map->height) && (map->data[coordY * map->width + coordX] != 0))
 			{
 				uint8_t mapTile = map->data[coordY * map->width + coordX];
+				uint32_t texCoord;
 				SDL_Color colorDat = {0,0,0,255};
 				if (rayLen != 0)
 				{
@@ -227,7 +229,7 @@ void RayEngine_raycastCompute(RayBuffer* rayBuffer, Camera* camera, uint32_t wid
 					double newY;
 					double rayLen = sqrt(getInterDist(rayStepX, rayStepY, camera->x + rayOffX, camera->y + rayOffY, (double)coordX, (double)coordY, &newX, &newY, &side))/scaleFactor;
 					uint32_t texCoord;
-					if (side)
+					if (side > 1)
 					{
 						texCoord = (uint32_t)floor((newX - coordX) * texData->tileWidth);
 					}
@@ -248,6 +250,60 @@ void RayEngine_raycastCompute(RayBuffer* rayBuffer, Camera* camera, uint32_t wid
 					rayBuffer[i].layers[rayBuffer[i].numLayers].depth = depth;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].yCoord = (int32_t)(((double)height / 2.0 - drawHeight)/jumpHeight + height * (1.0 - 1.0/jumpHeight));
 					rayBuffer[i].layers[rayBuffer[i].numLayers].height = (int32_t)drawHeight*2;
+					rayBuffer[i].numLayers++;
+					// Check for texture column transparency
+					uint8_t hasAlpha = 0;
+					for (int p = 0; p < texData->tileHeight; p++)
+					{
+						if ((texData->pixData[(mapTile-1)*texData->tileWidth*texData->tileHeight+texCoord+(texData->tileWidth*p)] & 0xFF) < 0xFF)
+						{
+							collisions++;
+							if (side == 0) // Hit from left
+							{
+								rayX += 1;
+								rayY += rayStepY * (1.0/rayStepX);
+							}
+							else if (side == 1) // Hit from right
+							{
+								rayX -= 1;
+								rayY -= rayStepY * (1.0/rayStepX);
+							}
+							else if (side == 2) // Hit from top
+							{
+								rayX += rayStepX * (1.0/rayStepY);
+								rayY += 1;
+							}
+							else // Hit from bottom
+							{
+								rayX -= rayStepX * (1.0/rayStepY);
+								rayY -= 1;
+							}
+							if (rayX+rayOffX < -map->border)
+							{
+								rayOffX += map->width + map->border * 2;
+							}
+							else if (rayX+rayOffX >= map->width + map->border)
+							{
+								rayOffX -= map->width + map->border * 2;
+							}
+							if (rayY+rayOffY < -map->border)
+							{
+								rayOffY += map->height + map->border*2;
+							}
+							else if (rayY+rayOffY >= map->height + map->border)
+							{
+								rayOffY -= map->height + map->border*2;
+							}
+							rayLen = sqrt((rayX-camera->x)*(rayX-camera->x) + (rayY-camera->y)*(rayY-camera->y));
+							rayStep++;
+							hasAlpha = 1;
+							break;
+						}
+					}
+					if (hasAlpha)
+					{
+						continue;
+					}
 				}
 				else //Camera is in column
 				{
@@ -259,8 +315,8 @@ void RayEngine_raycastCompute(RayBuffer* rayBuffer, Camera* camera, uint32_t wid
 					rayBuffer[i].layers[rayBuffer[i].numLayers].depth = 0;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].yCoord = 0;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].height = 0;
+					rayBuffer[i].numLayers++;
 				}
-				rayBuffer[i].numLayers++;
 				break;
 			}
 			rayX += rayStepX;
@@ -363,8 +419,8 @@ void RayEngine_raycastRender(PixBuffer* buffer,  Camera* camera, uint32_t width,
 
 void RayEngine_texRaycastRender(PixBuffer* buffer, uint32_t width, uint32_t height, RayBuffer* rayBuffer, double renderDepth)
 {
-	SDL_Color fadeColor = {50,50,100,0};
-	SDL_Color colorDat = {0,0,0,255};
+	SDL_Color fadeColor = {50,50,100,255};
+	SDL_Color colorDat = {0,0,0,0};
 	// For each screenwidth column
 	for (int i = 0; i < width; i++)
 	{
@@ -409,7 +465,7 @@ double getInterDist(double dx, double dy, double xi, double yi, double coordX, d
 	double dist;
 	double minDist = -1;
 	
-	if ((int)floor(leftCoord) == (int)coordY)
+	if ((int)floor(leftCoord) == (int)coordY) // Left side
 	{
 		minDist = (xi - coordX)*(xi - coordX) + (yi - leftCoord)*(yi - leftCoord);
 		*side = 0;
@@ -417,26 +473,26 @@ double getInterDist(double dx, double dy, double xi, double yi, double coordX, d
 		*newY = leftCoord;
 	}
 	dist = (coordX + 1 - xi)*(coordX + 1 - xi) + (rightCoord - yi)*(rightCoord - yi);
-	if ((int)floor(rightCoord) == (int)coordY && (dist < minDist || minDist == -1))
+	if ((int)floor(rightCoord) == (int)coordY && (dist < minDist || minDist == -1)) // Right side
 	{
 		minDist = dist;
-		*side = 0;
+		*side = 1;
 		*newX = coordX + 1;
 		*newY = rightCoord;
 	}
 	dist = (xi - topCoord)*(xi - topCoord) + (yi - coordY)*(yi - coordY);
-	if ((int)floor(topCoord) == (int)coordX && (dist < minDist || minDist == -1))
+	if ((int)floor(topCoord) == (int)coordX && (dist < minDist || minDist == -1)) // Top side
 	{
 		minDist = dist;
-		*side = 1;
+		*side = 2;
 		*newX = topCoord;
 		*newY = coordY;
 	}
 	dist = (xi - bottomCoord)*(xi - bottomCoord) + (yi - coordY - 1)*(yi - coordY - 1);
-	if ((int)floor(bottomCoord) == (int)coordX && (dist < minDist || minDist == -1))
+	if ((int)floor(bottomCoord) == (int)coordX && (dist < minDist || minDist == -1)) // Bottom side
 	{
 		minDist = dist;
-		*side = 1;
+		*side = 3;
 		*newX = bottomCoord;
 		*newY = coordY + 1;
 	}

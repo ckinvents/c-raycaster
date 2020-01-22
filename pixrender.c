@@ -87,8 +87,8 @@ void PixBuffer_drawTexColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h
             r += (int)((double)dr * fadePercent);
             g += (int)((double)dg * fadePercent);
             b += (int)((double)db * fadePercent);
-            //a += (int)((double)da * fadePercent); Doesn't seem to work yet
-            if (alphaNum != 0 && alphaNum != 1) // Alpha transparency, compute alpha based on array colors
+            a += (int)((double)da * fadePercent);
+            if (alphaNum*a != 0 && alphaNum*a != 255) // Alpha transparency, compute alpha based on array colors
             {
                 double alpha = ((double)a)/255.0 * (alphaNum);
                 uint32_t oldPix = buffer->pixels[(i+y)*buffer->width+x];

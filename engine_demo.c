@@ -39,7 +39,7 @@ int main(int argc, char* argv[])
 	double dt = 0;
 
 	unsigned char testMapChar[MAP_WIDTH*MAP_HEIGHT] = {
-		2,2,2,2,2,3,3,3,3,3,
+		2,2,2,2,2,3,3,9,3,3,
 		2,0,0,0,2,3,0,0,0,3,
 		2,0,5,0,2,3,0,0,0,3,
 		2,0,0,0,0,0,0,0,0,3,
@@ -187,7 +187,7 @@ int main(int argc, char* argv[])
 	boxTex.tileWidth = 16;
 	RayTex mapTex;
 	mapTex.pixData = blox_data;
-	mapTex.tileCount = 8;
+	mapTex.tileCount = 9;
 	mapTex.tileHeight = 16;
 	mapTex.tileWidth = 16;
 
@@ -243,7 +243,7 @@ int main(int argc, char* argv[])
 
 
 	// View depth
-	double depth = 0.5;
+	double depth = 4;
 	// Demo player
 	double angleValues[WIDTH];
 	Player testPlayer;
