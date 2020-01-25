@@ -316,12 +316,13 @@ int main(int argc, char* argv[])
 	// Fog gradient
 	SDL_Color fogFade = {50,50,100,0};
 	SDL_Color fogPrimary = {50,50,100,255};
-	SDL_Rect fogRectBottom = {0,HEIGHT/2+(int)ceil((double)HEIGHT/(depth*10)),WIDTH,(int)ceil((double)HEIGHT/(depth*10))};
-	SDL_Rect fogRectCenter = {0, HEIGHT/2-(int)ceil((double)HEIGHT/(depth*10)),WIDTH, (int)ceil((double)HEIGHT/(depth*10))*2};
-	SDL_Rect fogRectTop = {0,HEIGHT/2-(int)ceil((double)HEIGHT/(depth*10))*2,WIDTH,(int)floor((double)HEIGHT/(depth*10))};
+	SDL_Rect fogRectBottom = {0,HEIGHT/2+(int)floor((double)HEIGHT/(depth*10)),WIDTH,(int)floor((double)HEIGHT/(depth*10))};
+	SDL_Rect fogRectCenter = {0, HEIGHT/2-(int)floor((double)HEIGHT/(depth*10)),WIDTH, (int)floor((double)HEIGHT/(depth*10))*2};
+	SDL_Rect fogRectTop = {0,HEIGHT/2-(int)floor((double)HEIGHT/(depth*10))*2,WIDTH,(int)floor((double)HEIGHT/(depth*10))};
 	PixBuffer_clearBuffer(&buffer);
 	PixBuffer_drawHorizGradient(&buffer,&gradientRectTop, colorTop1, colorTop2);
-	PixBuffer_drawHorizGradient(&buffer,&gradientRectBottom, colorBottom1, colorBottom2);
+	//PixBuffer_drawHorizGradient(&buffer,&gradientRectBottom, colorBottom1, colorBottom2);
+	PixBuffer_drawRect(&buffer, &gradientRectBottom, colorBottom1);
 	//Render fog
 	PixBuffer_drawRect(&buffer, &fogRectCenter, fogPrimary);
 	PixBuffer_drawHorizGradient(&buffer,&fogRectTop, fogFade, fogPrimary);
@@ -372,6 +373,7 @@ int main(int argc, char* argv[])
 			RayEngine_raySpriteCompute(rayBuffer, &(testPlayer.camera), WIDTH, HEIGHT, 0.01, bullets.projectiles[s].sprite);
 			RayEngine_raySpriteCompute(rayBuffer, &(testPlayer.camera), WIDTH, HEIGHT, 0.01, bullets.projectiles[s].sprite);
 		}
+		RayEngine_texRenderFloor(&buffer, &testPlayer.camera, WIDTH, HEIGHT, NULL, 0, &mapTex);
 		RayEngine_texRaycastRender(&buffer, WIDTH, HEIGHT, rayBuffer, testPlayer.camera.dist);
 		RayEngine_draw2DSprite(&buffer, cursorSprite);
 		PixBuffer_orderDither256(&buffer, 5);

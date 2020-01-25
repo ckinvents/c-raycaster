@@ -11,6 +11,7 @@
 #include <math.h>
 #include <omp.h>
 #include "rayengine.h"
+#include <stdio.h>
 
 const uint8_t* keys;
 double getInterDist(double dx, double dy, double xi, double yi, double coordX, double coordY, double* newX, double* newY, uint8_t* side);
@@ -239,7 +240,7 @@ void RayEngine_raycastCompute(RayBuffer* rayBuffer, Camera* camera, uint32_t wid
 					}
 					double depth = (double)(rayLen * cos(rayAngle - camera->angle));
 					double colorGrad = (depth) / camera->dist;
-					double drawHeight = (double)(height / (depth * 10));
+					double drawHeight = (double)(height / (depth * 5));
 					SDL_Color fadeColor = {77,150,154,255};
 					double jumpHeight = 1;//2 + sin(SDL_GetTicks()/1000.0);
 					//PixBuffer_drawTexColumn(buffer, i, (int)(((double)height / 2.0 - drawHeight)/jumpHeight + height * (1.0 - 1.0/jumpHeight)), (int)drawHeight*2, texData, texCoord, colorGrad, fadeColor);
@@ -248,8 +249,8 @@ void RayEngine_raycastCompute(RayBuffer* rayBuffer, Camera* camera, uint32_t wid
 					rayBuffer[i].layers[rayBuffer[i].numLayers].tileNum = mapTile - 1;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].alphaNum = 1;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].depth = depth;
-					rayBuffer[i].layers[rayBuffer[i].numLayers].yCoord = (int32_t)(((double)height / 2.0 - drawHeight)/jumpHeight + height * (1.0 - 1.0/jumpHeight));
-					rayBuffer[i].layers[rayBuffer[i].numLayers].height = (int32_t)drawHeight*2;
+					rayBuffer[i].layers[rayBuffer[i].numLayers].yCoord = (int32_t)ceil(((double)height / 2.0 - drawHeight/2));
+					rayBuffer[i].layers[rayBuffer[i].numLayers].height = (int32_t)ceil(drawHeight);
 					rayBuffer[i].numLayers++;
 					// Check for texture column transparency
 					uint8_t hasAlpha = 0;
@@ -497,4 +498,67 @@ double getInterDist(double dx, double dy, double xi, double yi, double coordX, d
 		*newY = coordY + 1;
 	}
 	return minDist;
+}
+
+void RayEngine_texRenderFloor(PixBuffer* buffer, Camera* camera, uint32_t width, uint32_t height, Map* groundMap, double resolution, RayTex* texData)
+{
+	double scaleFactor = (double)width / (double)height * 2.4;
+
+	// Get initial coordinate position at top-left of floor space
+	uint32_t startX = 0;
+	uint32_t startY = height / 2;
+
+	double pixelX;
+	double pixelY;
+	double pixelDist;
+	double pixelDepth;
+	double fadePercent;
+
+	uint32_t texX;
+	uint32_t texY;
+
+	double startAngle = camera->angle - camera->fov / 2.0;
+	double rayAngle;
+	double rayCos;
+
+	SDL_Color fadeColor = {50,50,100,255};
+	
+	// iterate through *all* pixels...
+	for (int x = startX; x < width; x++)
+	{
+		// Establish angle of column...
+		rayAngle = startAngle + camera->angleValues[x];
+		rayCos = cos(rayAngle - camera->angle);
+
+		for (int y = startY + 1; y < height; y++)
+		{
+			// Compute the distance to the pixel...
+			pixelDist = (double)height / (10.0 * (y-startY-1) * rayCos) * scaleFactor;
+			pixelDepth = ((pixelDist / camera->dist) * rayCos);
+			double fogConstant = 4.0/5;
+			if (pixelDepth < camera->dist * fogConstant)
+			{
+				fadePercent = pixelDepth / (camera->dist * fogConstant);
+				pixelX = camera->x + pixelDist * cos(rayAngle);
+				pixelY = camera->y + pixelDist * sin(rayAngle);
+				// Wow, is that really it? The math says so...
+
+				// Get associated coordinate pixel...
+				// TODO: some grid code...
+				texX = (uint32_t)floor((double)texData->tileWidth * (pixelX - floor(pixelX)));
+				texY = (uint32_t)floor((double)texData->tileHeight * (pixelY - floor(pixelY)));
+				uint32_t pixColor = texData->pixData[texData->tileWidth * texData->tileHeight + texX + texY * texData->tileWidth];
+				int r = (int)(pixColor >> 3*8);
+				int g = (int)((pixColor >> 2*8) & 0xFF);
+				int b = (int)((pixColor >> 8) & 0xFF);
+				int dr = fadeColor.r - r;
+				int dg = fadeColor.g - g;
+				int db = fadeColor.b - b;
+				r += (int)((double)dr * fadePercent);
+				g += (int)((double)dg * fadePercent);
+				b += (int)((double)db * fadePercent);
+				buffer->pixels[x + y * buffer->width] = ((uint32_t)r << 3*8 | (uint32_t)g << 2*8 | (uint32_t)b << 8 | (uint32_t)0xFF);
+			}
+		}
+	}
 }
