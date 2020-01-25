@@ -31,12 +31,13 @@ Current features:
 - Alpha translucency and multi-collision ray tracing with supported textures
 - Adjustable player controls and maps
 - Map collisions
+- Floors
 
 Todo:
 - AI and collisions for entities
 - More complex sprite handling
 - Improved memory management
-- Floors & ceilings (yikes)
+- Ceilings, mapable floors
 - Scrolling skyboxes
 - Multi-level maps with transitions/procedural generation
 - Player height
