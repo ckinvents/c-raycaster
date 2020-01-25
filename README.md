@@ -52,3 +52,4 @@ Todo:
 - Player information (inventory, health, etc)
 - Maybe make an actual game with this thing???
 - *Actual documentation* D:
+- Oh yeah, probably a state system for events. Might be nice.
