@@ -88,7 +88,7 @@ void RayEngine_drawMinimap(PixBuffer* buffer, Camera* camera, unsigned int width
 	//SDL_RenderDrawLine(renderer, camera->x * blockSize + mapRect.x, camera->y * blockSize + mapRect.y, (camera->x + camera->dist * cos(camera->angle - camera->fov / 2)) * blockSize + mapRect.x, (camera->y + camera->dist * sin(camera->angle - camera->fov / 2)) * blockSize + mapRect.y);
 	//SDL_RenderDrawLine(renderer, camera->x * blockSize + mapRect.x, camera->y * blockSize + mapRect.y, (camera->x + camera->dist * cos(camera->angle + camera->fov / 2)) * blockSize + mapRect.x, (camera->y + camera->dist * sin(camera->angle + camera->fov / 2)) * blockSize + mapRect.y);
 	SDL_Color cameraCol = {0xFF, 0xFF, 0xFF, 0xFF};
-	PixBuffer_drawPix(buffer, camera->x * blockSize + mapRect.x, camera->y * blockSize + mapRect.y, cameraCol);
+	//PixBuffer_drawPix(buffer, camera->x * blockSize + mapRect.x, camera->y * blockSize + mapRect.y, cameraCol);
 }
 
 void RayEngine_deleteMap(unsigned char** map, int width, int height)
@@ -147,7 +147,7 @@ void RayEngine_raySpriteCompute(RayBuffer* rayBuffer, Camera* camera, uint32_t w
 	if (spriteDist > 0)
 	{
 		// Compute column from screen angle
-		int32_t centerX = (int32_t)width / 2 + (int32_t)(angleMapConstant * tan(screenAngle));
+		int32_t centerX = (int32_t)floor(width / 2 + (int32_t)(angleMapConstant * tan(screenAngle)));
 		// Get width and height
 		int32_t screenHeight;
 		int32_t screenWidth;
@@ -158,14 +158,14 @@ void RayEngine_raySpriteCompute(RayBuffer* rayBuffer, Camera* camera, uint32_t w
 		}
 		else
 		{
-			screenWidth = (int32_t)((double)height / (spriteDist * 5) * sprite.scaleFactor);
-			screenHeight = (int32_t)((double)screenWidth * ((double)sprite.texture->tileHeight / (double)sprite.texture->tileWidth));
+			screenWidth = (int32_t)ceil((double)height / (spriteDist * 5) * sprite.scaleFactor);
+			screenHeight = (int32_t)ceil((double)screenWidth * ((double)sprite.texture->tileHeight / (double)sprite.texture->tileWidth));
 		}
 		
 		int32_t spriteHeight = (int32_t)(sprite.h * height / (spriteDist * 5)); // I dunno why it's 40
 		int32_t startX = centerX - screenWidth / 2;
 		int32_t endX = startX + screenWidth;
-		int32_t startY = (int32_t)floor((height / 2) - ((double)screenHeight / 2) - spriteHeight);
+		int32_t startY = (int32_t)ceil((height / 2) - ((double)screenHeight / 2) - spriteHeight);
 		// Write to buffer if in fulcrum
 		if (startX <= (int32_t)width && endX >= 0)
 		{
@@ -534,6 +534,69 @@ void RayEngine_texRenderFloor(PixBuffer* buffer, Camera* camera, uint32_t width,
 		{
 			// Compute the distance to the pixel...
 			pixelDist = (double)height / (10.0 * (y-startY-1) * rayCos) * scaleFactor;
+			pixelDepth = ((pixelDist / camera->dist) * rayCos);
+			double fogConstant = 4.0/5;
+			if (pixelDepth < camera->dist * fogConstant)
+			{
+				fadePercent = pixelDepth / (camera->dist * fogConstant);
+				pixelX = camera->x + pixelDist * cos(rayAngle);
+				pixelY = camera->y + pixelDist * sin(rayAngle);
+				// Wow, is that really it? The math says so...
+
+				// Get associated coordinate pixel...
+				// TODO: some grid code...
+				texX = (uint32_t)floor((double)texData->tileWidth * (pixelX - floor(pixelX)));
+				texY = (uint32_t)floor((double)texData->tileHeight * (pixelY - floor(pixelY)));
+				uint32_t pixColor = texData->pixData[texData->tileWidth * texData->tileHeight + texX + texY * texData->tileWidth];
+				int r = (int)(pixColor >> 3*8);
+				int g = (int)((pixColor >> 2*8) & 0xFF);
+				int b = (int)((pixColor >> 8) & 0xFF);
+				int dr = fadeColor.r - r;
+				int dg = fadeColor.g - g;
+				int db = fadeColor.b - b;
+				r += (int)((double)dr * fadePercent);
+				g += (int)((double)dg * fadePercent);
+				b += (int)((double)db * fadePercent);
+				buffer->pixels[x + y * buffer->width] = ((uint32_t)r << 3*8 | (uint32_t)g << 2*8 | (uint32_t)b << 8 | (uint32_t)0xFF);
+			}
+		}
+	}
+}
+
+void RayEngine_texRenderCeiling(PixBuffer* buffer, Camera* camera, uint32_t width, uint32_t height, Map* ceilingMap, RayTex* texData)
+{
+	double scaleFactor = (double)width / (double)height * 2.4;
+
+	// Get initial coordinate position at top-left of floor space
+	uint32_t startX = 0;
+	uint32_t startY = 0;
+
+	double pixelX;
+	double pixelY;
+	double pixelDist;
+	double pixelDepth;
+	double fadePercent;
+
+	uint32_t texX;
+	uint32_t texY;
+
+	double startAngle = camera->angle - camera->fov / 2.0;
+	double rayAngle;
+	double rayCos;
+
+	SDL_Color fadeColor = {50,50,100,255};
+	
+	// iterate through *all* pixels...
+	for (int x = startX; x < width; x++)
+	{
+		// Establish angle of column...
+		rayAngle = startAngle + camera->angleValues[x];
+		rayCos = cos(rayAngle - camera->angle);
+
+		for (int y = startY + 1; y < height / 2; y++)
+		{
+			// Compute the distance to the pixel...
+			pixelDist = (double)height / (10.0 * (height / 2 - y) * rayCos) * scaleFactor;
 			pixelDepth = ((pixelDist / camera->dist) * rayCos);
 			double fogConstant = 4.0/5;
 			if (pixelDepth < camera->dist * fogConstant)

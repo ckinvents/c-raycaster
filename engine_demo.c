@@ -47,7 +47,7 @@ int main(int argc, char* argv[])
 		2,2,2,2,2,3,3,0,3,3,
 		6,6,6,6,6,0,4,0,4,0,
 		6,0,0,0,6,0,4,0,4,0,
-		6,0,1,0,6,0,4,0,4,0,
+		6,0,0,0,6,0,4,0,4,0,
 		0,0,0,0,6,4,4,0,4,4,
 		6,0,0,0,6,4,0,0,0,4,
 		0,0,0,0,0,0,0,0,0,4,
@@ -269,7 +269,7 @@ int main(int argc, char* argv[])
 	GameEngine_initEntity(&entityList[9], 7.5, 10.5, -0.375, 0, &spriteTexs[8], &shadowTex); // Test ball -0.375
 	GameEngine_scaleEntity(&entityList[9], 0.25); //0.25
 	entityList[9].sprite.alphaNum = 0.5;
-	GameEngine_moveEntity(&entityList[0], 2.5, 7.5, 1); // Big Thonker
+	GameEngine_moveEntity(&entityList[0], 2.5, 7.5, 0); // Big Thonk
 
 	// Test projectiles
 	ProjectileList bullets;
@@ -347,7 +347,7 @@ int main(int argc, char* argv[])
 		// Sprite movement
 		for (int s = 1; s < 9; s++)
 		{
-			GameEngine_moveEntity(&entityList[s], 2.5 + cos((double)runTime/1000+(s-1)*M_PI/4), 7.5 + sin((double)runTime/1000+(s-1)*M_PI/4), (s-1) * 0.2);
+			GameEngine_moveEntity(&entityList[s], 2.5 + cos((double)runTime/1000+(s-1)*M_PI/4), 7.5 + sin((double)runTime/1000+(s-1)*M_PI/4), 0);
 			entityList[s].sprite.frameNum = (runTime)%30;
 		}
 		entityList[0].sprite.frameNum = 29-(runTime/100)%30;
@@ -374,17 +374,14 @@ int main(int argc, char* argv[])
 			RayEngine_raySpriteCompute(rayBuffer, &(testPlayer.camera), WIDTH, HEIGHT, 0.01, bullets.projectiles[s].sprite);
 		}
 		RayEngine_texRenderFloor(&buffer, &testPlayer.camera, WIDTH, HEIGHT, NULL, 0, &mapTex);
+		//RayEngine_texRenderCeiling(&buffer, &testPlayer.camera, WIDTH, HEIGHT, NULL, &mapTex);
 		RayEngine_texRaycastRender(&buffer, WIDTH, HEIGHT, rayBuffer, testPlayer.camera.dist);
 		RayEngine_draw2DSprite(&buffer, cursorSprite);
 		PixBuffer_orderDither256(&buffer, 5);
 		// Note: between 4 & 10 is good for 16 color palette
+		// PixBuffer_monochromeFilter(&buffer, 1.0);
 		SDL_UpdateTexture(drawTex, NULL, buffer.pixels, sizeof(uint32_t) * WIDTH);
 		SDL_RenderCopy(renderer, drawTex, NULL, NULL);
-		//PixBuffer_clearBuffer(&buffer);
-		//RayEngine_drawMinimap(&buffer, testPlayer, WIDTH, HEIGHT, &testMap, 2);
-		//PixBuffer_orderDither256(&buffer, 5);
-		//SDL_UpdateTexture(drawTex, NULL, buffer.pixels, sizeof(uint32_t) * WIDTH);
-		//SDL_RenderCopy(renderer, drawTex, NULL, NULL);
 		SDL_RenderPresent(renderer);
 		dt = 0.001 * (double)(SDL_GetTicks() - runTime);
 		//printf("FPS: %d\n", 1.0/dt);

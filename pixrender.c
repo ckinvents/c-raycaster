@@ -47,7 +47,7 @@ void PixBuffer_drawColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h, S
     #pragma omp parallel for schedule(dynamic,1)
     for (int32_t i = y; i < y + h; i++)
     {
-        buffer->pixels[i*buffer->width+x] = getColor(color.r,color.g,color.b,color.a);
+        PixBuffer_drawPix(buffer, x, i, PixBuffer_toPixColor(color.r,color.g,color.b,color.a));
     }
 }
 
@@ -99,7 +99,7 @@ void PixBuffer_drawTexColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h
                 g = (int)((double)g * alpha + (double)oldG * (1-alpha));
                 b = (int)((double)b * alpha + (double)oldB * (1-alpha));
             }
-            buffer->pixels[(i+y)*buffer->width+x] = getColor(r,g,b,0xff);
+            PixBuffer_drawPix(buffer, x, i+y, PixBuffer_toPixColor(r,g,b,0xff));
         }
     }
 }
@@ -132,7 +132,7 @@ void PixBuffer_drawRow(PixBuffer* buffer, uint32_t x, uint32_t y, uint32_t w, SD
             r = (int)((double)(color.r) * alpha + (double)oldR * (1.0-alpha));
             g = (int)((double)(color.g) * alpha + (double)oldG * (1.0-alpha));
             b = (int)((double)(color.b) * alpha + (double)oldB * (1.0-alpha));
-            buffer->pixels[y*buffer->width+i] = getColor(r,g,b,0xff);
+            PixBuffer_drawPix(buffer, i, y, PixBuffer_toPixColor(r,g,b,0xff));
         }
     }
 }
@@ -420,6 +420,54 @@ void PixBuffer_orderDither256(PixBuffer* buffer, double scaleFactor)
     }
 }
 
+void PixBuffer_monochromeFilter(PixBuffer* buffer, double fadePercent)
+{
+    SDL_Color oldColor;
+    int targetAvg;
+    uint32_t newColor;
+
+    int dr;
+    int dg;
+    int db;
+
+    for (int y = 0; y < buffer->height; y++)
+    {
+        for (int x = 0; x < buffer->width; x++)
+        {
+            oldColor = PixBuffer_toSDLColor(PixBuffer_getPix(buffer, x, y));
+            targetAvg = (oldColor.r + oldColor.g + oldColor.b) / 3;
+            dr = (targetAvg - oldColor.r) * fadePercent;
+            dg = (targetAvg - oldColor.g) * fadePercent;
+            db = (targetAvg - oldColor.b) * fadePercent;
+            newColor = PixBuffer_toPixColor((uint8_t)(oldColor.r + dr), (uint8_t)(oldColor.g + dg), (uint8_t)(oldColor.b + db), (uint8_t)oldColor.a);
+            PixBuffer_drawPix(buffer, x, y, newColor);
+        }
+    }
+}
+
+void PixBuffer_inverseFilter(PixBuffer* buffer)
+{
+    SDL_Color oldColor;
+    uint32_t newColor;
+
+    int r;
+    int g;
+    int b;
+
+    for (int y = 0; y < buffer->height; y++)
+    {
+        for (int x = 0; x < buffer->width; x++)
+        {
+            oldColor = PixBuffer_toSDLColor(PixBuffer_getPix(buffer, x, y));
+            r = (255 - oldColor.r);
+            g = (255 - oldColor.g);
+            b = (255 - oldColor.b);
+            newColor = PixBuffer_toPixColor((uint8_t)r, (uint8_t)g, (uint8_t)b, (uint8_t)oldColor.a);
+            PixBuffer_drawPix(buffer, x, y, newColor);
+        }
+    }
+}
+
 /**
  * @brief Returns color formatted to RGBA format
  * @param buffer PixBuffer to set color for
@@ -428,9 +476,24 @@ void PixBuffer_orderDither256(PixBuffer* buffer, double scaleFactor)
  * @param b SDL_Color blue component
  * @param a SDL_Color alpha component
  **/
-uint32_t getColor(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+uint32_t PixBuffer_toPixColor(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
     return ((uint32_t)r << 3*8 | (uint32_t)g << 2*8 | (uint32_t)b << 8 | (uint32_t)a);
+}
+
+SDL_Color PixBuffer_toSDLColor(uint32_t pixColor)
+{
+    int r = (int)(pixColor >> 3*8);
+    int g = (int)((pixColor >> 2*8) & 0xFF);
+    int b = (int)((pixColor >> 8) & 0xFF);
+    int a = (int)(pixColor & 0xFF);
+    SDL_Color newColor = {r, g, b, a};
+    return newColor;
+}
+
+uint32_t PixBuffer_getPix(PixBuffer* buffer, uint32_t x, uint32_t y)
+{
+    return buffer->pixels[x + y * buffer->width];
 }
 
 /**
@@ -439,10 +502,10 @@ uint32_t getColor(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
  * @param x x coordinate of pixel
  * @param y y coordinate of pixel
  **/
-void PixBuffer_drawPix(PixBuffer* buffer, uint32_t x, uint32_t y, SDL_Color color)
+void PixBuffer_drawPix(PixBuffer* buffer, uint32_t x, uint32_t y, uint32_t color)
 {
     if (x < buffer->width && y < buffer->height)
     {
-        buffer->pixels[y*buffer->width+x] = getColor(color.r,color.g,color.g,color.a);
+        buffer->pixels[y*buffer->width+x] = color;
     }
 }
