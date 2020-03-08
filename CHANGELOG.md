@@ -1,5 +1,5 @@
-## Changes
-# 07/03/2020
+# Changes
+## 07/03/2020
 - engine_demo
     - Fixed compile warnings (incompatible types, etc.)
     - Removed much commented-out testing code
