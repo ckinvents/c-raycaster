@@ -1,0 +1,18 @@
+## Changes
+# 07/03/2020
+- engine_demo
+    - Fixed compile warnings (incompatible types, etc.)
+    - Removed much commented-out testing code
+    - Removed projectiles test
+    - Changed background to a proper PixBuffer rather than raw data
+    - Added section comments for clarification
+- gameengine
+    - Fixed warnings
+    - tweaked projectile code
+- pixrender
+    - Added buffer scrolling
+    - Adjusted resolution
+- rayengine
+    - Fixed warnings
+    - Removed classic renderer
+    - Removed broken map code

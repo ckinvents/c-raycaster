@@ -184,6 +184,25 @@ void PixBuffer_drawHorizGradient(PixBuffer* buffer, SDL_Rect* rect, SDL_Color co
     }
 }
 
+void PixBuffer_drawBuffOffset(PixBuffer* target, PixBuffer* source, uint32_t x, uint32_t y, int32_t xOff)
+{
+    int32_t xCoord;
+    for (uint32_t i = 0; i < source->height; i++)
+    {
+        if (i < target->height)
+        {
+            for (uint32_t j = 0; j < source->width; j++)
+            {
+                if (j < target->width)
+                {
+                    xCoord = (j + xOff) % target->width;
+                    target->pixels[j+i*target->width] = source->pixels[xCoord+i*target->width];
+                }
+            }
+        }
+    }
+}
+
 /**
  * @brief Clears buffer array to 0x00
  * Useful if you need to quickly reuse a buffer

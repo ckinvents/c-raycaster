@@ -20,37 +20,35 @@ Controls:
 - a, d to rotate counterclockwise and clockwise (respectively, duh. I'm not a masochist \[hmmm... well...\])
 - shift to sprint in literally every direction (minus turning, personal preference)
 
-Current features:
-- Textured grid-based raycasting on a single plane
-- Pixel scaling, dithering, and palletization
-- Automatic texture scaling
-- Gradient and rectangle drawing, as well as arbitrary pixel drawing functions
-- 3D sprites with depth buffering, alpha transparency, animation, height and scaling
-- 2D overlay sprites with alpha transparency and scaling
-- Depth fog (sort of)
-- Alpha translucency and multi-collision ray tracing with supported textures
-- Adjustable player controls and maps
-- Map collisions
-- Floors / Ceilings
-
-Todo:
-- AI and collisions for entities
-- More complex sprite handling
-- Improved memory management
-- Mapable floors / ceilings
-- Scrolling skyboxes
-- Multi-level maps with transitions/procedural generation
-- Player height
-- More pixel shaders
-- Full overlays
-- Text engine
-- Audio engine
-- Single-plane offset walls
-- Animated wall textures
-- Interactive objects
-- Additional, better reference artwork (I'm doing my best, it takes practice)
-- Controller support (yes, UDXS, including the Steam controller)
-- Player information (inventory, health, etc)
-- Maybe make an actual game with this thing???
-- *Actual documentation* D:
-- Oh yeah, probably a state system for events. Might be nice.
+Features / Goals:
+- [x] Textured grid-based raycasting on a single plane
+- [x] Pixel scaling, dithering, and palletization
+- [x] Automatic texture scaling
+- [x] Gradient and rectangle drawing, as well as arbitrary pixel drawing functions
+- [x] 3D sprites with depth buffering, alpha transparency, animation, height and scaling
+- [x] 2D overlay sprites with alpha transparency and scaling
+- [x] Depth fog (sort of)
+- [x] Alpha translucency and multi-collision ray tracing with supported textures
+- [x] Adjustable player controls and maps
+- [x] Map collisions
+- [x] Floors / Ceilings
+- [ ] AI and collisions for entities
+- [ ] More complex sprite handling
+- [ ] Improved memory management
+- [ ] Mapable floors / ceilings
+- [ ] Scrolling skyboxes (currently in progress)
+- [ ] Multi-level maps with transitions/procedural generation
+- [ ] Player height
+- [ ] More pixel shaders
+- [ ] Full overlays
+- [ ] Text engine
+- [ ] Audio engine
+- [ ] Single-plane offset walls
+- [ ] Animated wall textures
+- [ ] Interactive objects
+- [ ] Additional, better reference artwork (I'm doing my best, it takes practice)
+- [ ] Controller support (yes, UDXS, including the Steam controller)
+- [ ] Player information (inventory, health, etc)
+- [ ] Maybe make an actual game with this thing???
+- [ ] *Actual documentation* D:
+- [ ] Oh yeah, probably a state system for events. Might be nice.

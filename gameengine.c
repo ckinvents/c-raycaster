@@ -62,7 +62,7 @@ void GameEngine_scaleEntity(Entity* entity, double scaleFactor)
 void GameEngine_updatePlayer(Player* player, Map* map, double dt)
 {
 	int borderWidth = 2;
-	uint8_t* keys = SDL_GetKeyboardState(NULL);
+	const uint8_t* keys = SDL_GetKeyboardState(NULL);
 	if ((keys[SDL_SCANCODE_W]||keys[SDL_SCANCODE_S]||keys[SDL_SCANCODE_Q]||keys[SDL_SCANCODE_E])&&!((keys[SDL_SCANCODE_W]&&keys[SDL_SCANCODE_S])||keys[SDL_SCANCODE_Q]&&keys[SDL_SCANCODE_E]))
 	{
 		double dx;
@@ -166,9 +166,9 @@ void GameEngine_updateEntity(Entity* entity)
 
 void GameEngine_updateProjectile(ProjectileList* projectiles, uint32_t numProjectile, Player* player)
 {
-	double velocity = 0.05;
+	double velocity = 0.1;
 	// First, see if space key pressed
-	uint8_t* keys = SDL_GetKeyboardState(NULL);
+	const uint8_t* keys = SDL_GetKeyboardState(NULL);
 	// Hasn't yet fired
 	if (keys[SDL_SCANCODE_SPACE] && !player->spacePressed)
 	{

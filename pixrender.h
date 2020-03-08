@@ -2,8 +2,8 @@
 #define RENDER_H
 
 #include <SDL2/SDL.h>
-#define WIDDERSHINS 1000
-#define TURNWISE 800
+#define WIDDERSHINS 1024
+#define TURNWISE 896
 
 typedef struct _PixBuffer {
     uint32_t* pixels;
@@ -22,6 +22,7 @@ void PixBuffer_drawColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h, S
 void PixBuffer_drawTexColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h, RayTex* texture, uint8_t tileNum, double alphaNum, uint32_t column, double fadePercent, SDL_Color targetColor);
 void PixBuffer_drawRect(PixBuffer* buffer, SDL_Rect* rect, SDL_Color color);
 void PixBuffer_drawHorizGradient(PixBuffer* buffer, SDL_Rect* rect, SDL_Color colTop, SDL_Color colBottom);
+void PixBuffer_drawBuffOffset(PixBuffer* target, PixBuffer* source, uint32_t x, uint32_t y, int32_t xOff);
 void PixBuffer_clearBuffer(PixBuffer* buffer);
 void PixBuffer_paletteFilter(PixBuffer* buffer, SDL_Color* palette, int paletteNum);
 void PixBuffer_orderDither(PixBuffer* buffer, SDL_Color* palette, int paletteNum, double scaleFactor);

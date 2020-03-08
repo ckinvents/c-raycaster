@@ -118,7 +118,7 @@ void RayEngine_generateAngleValues(uint32_t width, Camera* camera)
 }
 
 // Compare function for qsort
-int raycastCompare(void *buffer1, void *buffer2)
+int raycastCompare(const void *buffer1, const void *buffer2)
 {
 	if ((((RayColumn*)buffer2)->depth - ((RayColumn*)buffer1)->depth) < 0.0)
 	{
@@ -209,7 +209,7 @@ void RayEngine_raycastCompute(RayBuffer* rayBuffer, Camera* camera, uint32_t wid
 		double rayStepX = (resolution) * cos(rayAngle);
 		double rayStepY = (resolution) * sin(rayAngle);
 		double stepLen = (resolution) / scaleFactor;
-		long double rayLen = 0;
+		double rayLen = 0;
 		int rayStep = 0;
 		int rayOffX = 0;
 		int rayOffY = 0;
@@ -317,80 +317,6 @@ void RayEngine_raycastCompute(RayBuffer* rayBuffer, Camera* camera, uint32_t wid
 					rayBuffer[i].layers[rayBuffer[i].numLayers].yCoord = 0;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].height = 0;
 					rayBuffer[i].numLayers++;
-				}
-				break;
-			}
-			rayX += rayStepX;
-			rayY += rayStepY;
-			if (rayX+rayOffX < -map->border)
-			{
-				rayOffX += map->width + map->border * 2;
-			}
-			else if (rayX+rayOffX >= map->width + map->border)
-			{
-				rayOffX -= map->width + map->border * 2;
-			}
-			if (rayY+rayOffY < -map->border)
-			{
-				rayOffY += map->height + map->border*2;
-			}
-			else if (rayY+rayOffY >= map->height + map->border)
-			{
-				rayOffY -= map->height + map->border*2;
-			}
-			rayStep++;
-			rayLen += stepLen;
-		}
-	}
-}
-
-void RayEngine_raycastRender(PixBuffer* buffer,  Camera* camera, uint32_t width, uint32_t height, Map* map, double resolution)
-{
-	// Establish starting angle and sweep per column
-	double startAngle = camera->angle - camera->fov / 2.0;
-	double adjFactor = width / (2 * tan(camera->fov / 2));
-	double scaleFactor = (double)width / (double)height * 2.4;
-	double rayAngle = startAngle;
-	// Sweeeeep for each column
-	#pragma omp parallel for schedule(dynamic,1) private(rayAngle)
-	for (int i = 0; i < width; i++)
-	{
-		rayAngle = startAngle + camera->angleValues[i];
-		double rayX = camera->x;
-		double rayY = camera->y;
-		double rayStepX = (resolution) * cos(rayAngle);
-		double rayStepY = (resolution) * sin(rayAngle);
-		double stepLen = (resolution) / scaleFactor;
-		long double rayLen = 0;
-		int rayStep = 0;
-		int rayOffX = 0;
-		int rayOffY = 0;
-		while (rayLen < camera->dist)
-		{
-			int coordX = (int)floor(rayX+rayOffX);
-			int coordY = (int)floor(rayY+rayOffY);
-			if ((coordX >= 0.0 && coordY >= 0.0) && (coordX < map->width && coordY < map->height) && (map->data[coordY * map->width + coordX] != 0))
-			{
-				SDL_Color colorDat = map->colorData[map->data[coordY * map->width + coordX] - 1];
-				if (rayLen != 0)
-				{
-					double newX;
-					double newY;
-					uint8_t side;
-					double rayLen = sqrt(getInterDist(rayStepX, rayStepY, camera->x + rayOffX, camera->y + rayOffY, (double)coordX, (double)coordY, &newX, &newY, &side))/scaleFactor;
-					double depth = (double)(rayLen * cos(rayAngle - camera->angle));
-					double colorGrad = (camera->dist - depth) / camera->dist;
-					if (colorGrad < 0 || colorGrad > 1)
-					{
-						colorGrad = 0;
-					}
-					SDL_Color columnColor = {(int)((double)colorDat.r * (colorGrad)), (int)((double)colorDat.g * (colorGrad)), (int)((double)colorDat.b * (colorGrad)), 0xFF};
-					double drawHeight = (double)(height / (depth * 10));
-					PixBuffer_drawColumn(buffer, i, (int)((double)height / 2.0 - drawHeight), drawHeight*2, columnColor);
-				}
-				else
-				{
-					PixBuffer_drawColumn(buffer, i, 0, height, colorDat);
 				}
 				break;
 			}
@@ -563,7 +489,7 @@ void RayEngine_texRenderFloor(PixBuffer* buffer, Camera* camera, uint32_t width,
 	}
 }
 
-void RayEngine_texRenderCeiling(PixBuffer* buffer, Camera* camera, uint32_t width, uint32_t height, Map* ceilingMap, RayTex* texData)
+void RayEngine_texRenderCeiling(PixBuffer* buffer, Camera* camera, uint32_t width, uint32_t height, Map* ceilingMap, RayTex* texData, double hset)
 {
 	double scaleFactor = (double)width / (double)height * 2.4;
 
@@ -596,7 +522,7 @@ void RayEngine_texRenderCeiling(PixBuffer* buffer, Camera* camera, uint32_t widt
 		for (int y = startY + 1; y < height / 2; y++)
 		{
 			// Compute the distance to the pixel...
-			pixelDist = (double)height / (10.0 * (height / 2 - y) * rayCos) * scaleFactor;
+			pixelDist = (double)height / (10.0 * (height / 2 - y) * rayCos) * scaleFactor * hset;
 			pixelDepth = ((pixelDist / camera->dist) * rayCos);
 			double fogConstant = 4.0/5;
 			if (pixelDepth < camera->dist * fogConstant)

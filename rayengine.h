@@ -50,15 +50,13 @@ typedef struct _RaySprite {
 void RayEngine_generateMap(Map* newMap, unsigned char* charList, int width, int height, int border, SDL_Color* colorData, int numColor);
 void RayEngine_initSprite(RaySprite* newSprite, RayTex* texture, double scaleFactor, double alphaNum, double x, double y, double h);
 void RayEngine_draw2DSprite(PixBuffer* buffer, RaySprite sprite);
-//void RayEngine_drawMinimap(PixBuffer* buffer, Player* player, unsigned int width, unsigned int height, Map* map, int blockSize);
-void RayEngine_deleteMap(unsigned char** map, int width, int height);
 void RayEngine_generateAngleValues(uint32_t width, Camera* camera);
 void RayEngine_raySpriteCompute(RayBuffer* rayBuffer, Camera* camera, uint32_t width, uint32_t height, double resolution, RaySprite sprite);
 void RayEngine_raycastCompute(RayBuffer* rayBuffer, Camera* camera, uint32_t width, uint32_t height, Map* map, double resolution, RayTex* texData);
 void RayEngine_raycastRender(PixBuffer* buffer,  Camera* camera, uint32_t width, uint32_t height, Map* map, double resolution);
 void RayEngine_texRaycastRender(PixBuffer* buffer, uint32_t width, uint32_t height, RayBuffer* rayBuffer, double renderDepth);
 void RayEngine_texRenderFloor(PixBuffer* buffer, Camera* camera, uint32_t width, uint32_t height, Map* groundMap, double resolution, RayTex* texData);
-void RayEngine_texRenderCeiling(PixBuffer* buffer, Camera* camera, uint32_t width, uint32_t height, Map* ceilingMap, RayTex* texData);
+void RayEngine_texRenderCeiling(PixBuffer* buffer, Camera* camera, uint32_t width, uint32_t height, Map* ceilingMap, RayTex* texData, double hset);
 
 
 #endif//RAYENGINE_H

@@ -182,69 +182,34 @@ int main(int argc, char* argv[])
 
 	// Demo texture
 	RayTex boxTex;
-	boxTex.pixData = box_data;
+	boxTex.pixData = (uint32_t*)box_data;
 	boxTex.tileCount = 1;
 	boxTex.tileHeight = 16;
 	boxTex.tileWidth = 16;
 	RayTex mapTex;
-	mapTex.pixData = blox_data;
+	mapTex.pixData = (uint32_t*)blox_data;
 	mapTex.tileCount = 9;
 	mapTex.tileHeight = 16;
 	mapTex.tileWidth = 16;
 
 	// Shadow texture
 	RayTex shadowTex;
-	shadowTex.pixData = shadow_data;
+	shadowTex.pixData = (uint32_t*)shadow_data;
 	shadowTex.tileCount = 1;
 	shadowTex.tileHeight = 32;
 	shadowTex.tileWidth = 128;
 
-	// Projectile texture
-	RayTex bulletTex;
-	bulletTex.pixData = bullet_data;
-	bulletTex.tileCount = 4;
-	bulletTex.tileHeight = 5;
-	bulletTex.tileWidth = 4;
-
 	// Initialize sprite assets
 	RayTex spriteTexs[10];
-	// spriteTexs[0].pixData = cono_data;
-	// spriteTexs[0].tileCount = 1;
-	// spriteTexs[0].tileHeight = 128;
-	// spriteTexs[0].tileWidth = 128;
-	// spriteTexs[1].pixData = droptips_data;
-	// spriteTexs[1].tileCount = 1;
-	// spriteTexs[1].tileHeight = 128;
-	// spriteTexs[1].tileWidth = 128;
-	// spriteTexs[2].pixData = keule_data;
-	// spriteTexs[2].tileCount = 1;
-	// spriteTexs[2].tileHeight = 128;
-	// spriteTexs[2].tileWidth = 105;
-	// spriteTexs[3].pixData = lors_data;
-	// spriteTexs[3].tileCount = 1;
-	// spriteTexs[3].tileHeight = 128;
-	// spriteTexs[3].tileWidth = 122;
-	// spriteTexs[4].pixData = spaaace_data;
-	// spriteTexs[4].tileCount = 1;
-	// spriteTexs[4].tileHeight = 122;
-	// spriteTexs[4].tileWidth = 128;
-	// spriteTexs[5].pixData = thonking_data;
-	// spriteTexs[5].tileCount = 1;
-	// spriteTexs[5].tileHeight = 121;
-	// spriteTexs[5].tileWidth = 128;
-	// spriteTexs[6].pixData = udxs_data;
-	// spriteTexs[6].tileCount = 1;
-	// spriteTexs[6].tileHeight = 128;
-	// spriteTexs[6].tileWidth = 120;
-	spriteTexs[7].pixData = spinning_thonk_data;
+	spriteTexs[7].pixData = (uint32_t*)spinning_thonk_data;
 	spriteTexs[7].tileCount = 30;
 	spriteTexs[7].tileHeight = 128;
 	spriteTexs[7].tileWidth = 128;
-	spriteTexs[8].pixData = ball_data;
+	spriteTexs[8].pixData = (uint32_t*)ball_data;
 	spriteTexs[8].tileCount = 1;
 	spriteTexs[8].tileWidth = 31;
 	spriteTexs[8].tileHeight = 32;
-	spriteTexs[9].pixData = cursor_data;
+	spriteTexs[9].pixData = (uint32_t*)cursor_data;
 	spriteTexs[9].tileCount = 1;
 	spriteTexs[9].tileWidth = 16;
 	spriteTexs[9].tileHeight = 16;
@@ -270,10 +235,6 @@ int main(int argc, char* argv[])
 	GameEngine_scaleEntity(&entityList[9], 0.25); //0.25
 	entityList[9].sprite.alphaNum = 0.5;
 	GameEngine_moveEntity(&entityList[0], 2.5, 7.5, 0); // Big Thonk
-
-	// Test projectiles
-	ProjectileList bullets;
-	GameEngine_initProjectiles(&bullets, 64, &bulletTex, &shadowTex);
 
 	// Test cursor sprite
 	RaySprite cursorSprite;
@@ -303,6 +264,10 @@ int main(int argc, char* argv[])
 
 	// Generate background texture
 	uint32_t texPixels[WIDTH * HEIGHT];
+	PixBuffer background;
+	background.pixels = texPixels;
+	background.width = WIDTH;
+	background.height = HEIGHT;
 	SDL_Rect gradientRectTop = {0,0,WIDTH,HEIGHT/2};
 	//SDL_Color colorTop1 = {189,255,255,255};//{255,100,100,255};
 	//SDL_Color colorTop2 = {77,150,154,255};//{0,0,100,255};
@@ -319,26 +284,27 @@ int main(int argc, char* argv[])
 	SDL_Rect fogRectBottom = {0,HEIGHT/2+(int)floor((double)HEIGHT/(depth*10)),WIDTH,(int)floor((double)HEIGHT/(depth*10))};
 	SDL_Rect fogRectCenter = {0, HEIGHT/2-(int)floor((double)HEIGHT/(depth*10)),WIDTH, (int)floor((double)HEIGHT/(depth*10))*2};
 	SDL_Rect fogRectTop = {0,HEIGHT/2-(int)floor((double)HEIGHT/(depth*10))*2,WIDTH,(int)floor((double)HEIGHT/(depth*10))};
-	PixBuffer_clearBuffer(&buffer);
-	PixBuffer_drawHorizGradient(&buffer,&gradientRectTop, colorTop1, colorTop2);
+	PixBuffer_clearBuffer(&background);
+	PixBuffer_drawHorizGradient(&background,&gradientRectTop, colorTop1, colorTop2);
 	//PixBuffer_drawHorizGradient(&buffer,&gradientRectBottom, colorBottom1, colorBottom2);
-	PixBuffer_drawRect(&buffer, &gradientRectBottom, colorBottom1);
-	//Render fog
-	PixBuffer_drawRect(&buffer, &fogRectCenter, fogPrimary);
-	PixBuffer_drawHorizGradient(&buffer,&fogRectTop, fogFade, fogPrimary);
-	PixBuffer_drawHorizGradient(&buffer,&fogRectBottom, fogPrimary, fogFade);
-	// Note: between 15 & 20 is good for 16 color palettes
-	PixBuffer_orderDither256(&buffer, 5);
-	memcpy(texPixels, buffer.pixels, sizeof(uint32_t) * WIDTH * HEIGHT);
-
+	PixBuffer_drawRect(&background, &gradientRectBottom, colorBottom1);
+	// Render fog
+	PixBuffer_drawRect(&background, &fogRectCenter, fogPrimary);
+	PixBuffer_drawHorizGradient(&background,&fogRectTop, fogFade, fogPrimary);
+	PixBuffer_drawHorizGradient(&background,&fogRectBottom, fogPrimary, fogFade);
+	
+	// State variables
 	uint8_t quit = 0;
 	uint8_t frameCounter = 0;
+	double runTimeF = 0;
 	while(!quit)
 	{
+		// **Update Routine**
 		runTime = SDL_GetTicks();		
+		runTimeF = (double)runTime/1000;
 		while (SDL_PollEvent(&event))
 		{
-			if (event.type == SDL_QUIT)
+			if (event.type == SDL_QUIT || (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_ESCAPE))
 			{
 				quit = 1;
 			}
@@ -347,18 +313,20 @@ int main(int argc, char* argv[])
 		// Sprite movement
 		for (int s = 1; s < 9; s++)
 		{
-			GameEngine_moveEntity(&entityList[s], 2.5 + cos((double)runTime/1000+(s-1)*M_PI/4), 7.5 + sin((double)runTime/1000+(s-1)*M_PI/4), 0);
+			GameEngine_moveEntity(&entityList[s], 2.5 + cos(runTimeF+(s-1)*M_PI/4), 7.5 + sin(runTimeF+(s-1)*M_PI/4), 0);
 			entityList[s].sprite.frameNum = (runTime)%30;
 		}
 		entityList[0].sprite.frameNum = 29-(runTime/100)%30;
-		GameEngine_updateProjectile(&bullets, 64, &testPlayer);
 
+		// **Render Routine**
 		// Clear, draw line and update
 		SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
 		SDL_RenderClear(renderer);
 		SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
 		PixBuffer_clearBuffer(&buffer);
-		memcpy(buffer.pixels, texPixels, sizeof(uint32_t) * WIDTH * HEIGHT);
+
+		//PixBuffer_drawBuffOffset(&buffer, &background, WIDTH, HEIGHT, testPlayer.angle*scrollConst);
+		memcpy(buffer.pixels, background.pixels, sizeof(uint32_t)*WIDTH*HEIGHT);
 		//RayEngine_raycastRender(&buffer, testPlayer, WIDTH, HEIGHT, &testMap, 0.01);
 		RayEngine_raycastCompute(rayBuffer, &(testPlayer.camera), WIDTH, HEIGHT, &testMap, 0.01, &mapTex);
 		// Update & draw sprites
@@ -368,23 +336,17 @@ int main(int argc, char* argv[])
 			RayEngine_raySpriteCompute(rayBuffer, &(testPlayer.camera), WIDTH, HEIGHT, 0.01, entityList[s].sprite);
 			RayEngine_raySpriteCompute(rayBuffer, &(testPlayer.camera), WIDTH, HEIGHT, 0.01, entityList[s].shadow);
 		}
-		for (uint8_t s = 0; s < 64; s++)
-		{
-			RayEngine_raySpriteCompute(rayBuffer, &(testPlayer.camera), WIDTH, HEIGHT, 0.01, bullets.projectiles[s].sprite);
-			RayEngine_raySpriteCompute(rayBuffer, &(testPlayer.camera), WIDTH, HEIGHT, 0.01, bullets.projectiles[s].sprite);
-		}
+
 		RayEngine_texRenderFloor(&buffer, &testPlayer.camera, WIDTH, HEIGHT, NULL, 0, &mapTex);
-		//RayEngine_texRenderCeiling(&buffer, &testPlayer.camera, WIDTH, HEIGHT, NULL, &mapTex);
+		//RayEngine_texRenderCeiling(&buffer, &testPlayer.camera, WIDTH, HEIGHT, NULL, &mapTex, 2+sin(runTimeF*0.5));
 		RayEngine_texRaycastRender(&buffer, WIDTH, HEIGHT, rayBuffer, testPlayer.camera.dist);
-		RayEngine_draw2DSprite(&buffer, cursorSprite);
+		//RayEngine_draw2DSprite(&buffer, cursorSprite);
 		PixBuffer_orderDither256(&buffer, 5);
 		// Note: between 4 & 10 is good for 16 color palette
-		// PixBuffer_monochromeFilter(&buffer, 1.0);
 		SDL_UpdateTexture(drawTex, NULL, buffer.pixels, sizeof(uint32_t) * WIDTH);
 		SDL_RenderCopy(renderer, drawTex, NULL, NULL);
 		SDL_RenderPresent(renderer);
 		dt = 0.001 * (double)(SDL_GetTicks() - runTime);
-		//printf("FPS: %d\n", 1.0/dt);
 	}
 
 
