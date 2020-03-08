@@ -6,10 +6,15 @@
 typedef struct _Player {
 	double x;
 	double y;
+    double h;
+    double groundH;
+    double velX;
+    double velY;
+    double velH;
 	double angle;
     uint8_t health;
     uint8_t state;
-    uint32_t coolDown;
+    double timer;
     uint8_t spacePressed;
     Camera camera;
 } Player;

@@ -16,13 +16,18 @@ void GameEngine_initPlayer(Player* player, double x, double y, double angle, dou
 {
 	player->x = x;
 	player->y = y;
+	player->h = 0;
 	player->angle = angle;
-	player->health = 0; //PLACEHOLDER
-	player->state = 0; //PLACEHOLDER
+	player->health = 100; //PLACEHOLDER
+	player->state = 1; //PLACEHOLDER
 	player->spacePressed = 0;
-	player->coolDown = 0;
+	player->timer = 0;
+	player->camera.x = player->x;
+	player->camera.y = player->y;
+	player->camera.angle = player->angle;
 	player->camera.dist = viewDist;
 	player->camera.fov = fov;
+	player->camera.h = player->h;
 	RayEngine_generateAngleValues(screenWidth, &(player->camera));
 }
 
@@ -63,94 +68,163 @@ void GameEngine_updatePlayer(Player* player, Map* map, double dt)
 {
 	int borderWidth = 2;
 	const uint8_t* keys = SDL_GetKeyboardState(NULL);
-	if ((keys[SDL_SCANCODE_W]||keys[SDL_SCANCODE_S]||keys[SDL_SCANCODE_Q]||keys[SDL_SCANCODE_E])&&!((keys[SDL_SCANCODE_W]&&keys[SDL_SCANCODE_S])||keys[SDL_SCANCODE_Q]&&keys[SDL_SCANCODE_E]))
+	// Death test
+	if ((keys[SDL_SCANCODE_K] && player->state))
 	{
-		double dx;
-		double dy;
-		double speedFactor = (1 + keys[SDL_SCANCODE_LSHIFT] * 1.5);
-		if ((keys[SDL_SCANCODE_W]||keys[SDL_SCANCODE_S])&&!(keys[SDL_SCANCODE_Q]||keys[SDL_SCANCODE_E]))
+		printf("Player was killed!\n");
+		player->state = 0;
+		player->timer = 0;
+		player->groundH = -0.4;
+	}
+	else if ((keys[SDL_SCANCODE_R] && !player->state))
+	{
+		printf("Respawned!\n");
+		player->state = 2;
+	}
+
+	// State handling
+	switch (player->state)
+	{
+		case 0:
 		{
-			dx = 2 * dt * cos(player->angle) * speedFactor;
-			dy = 2 * dt * sin(player->angle) * speedFactor;
+			if (player->timer < 3)
+			{
+				player->timer += dt;
+			}
+			break;
 		}
-		else if ((keys[SDL_SCANCODE_W]&&keys[SDL_SCANCODE_Q])||(keys[SDL_SCANCODE_S]&&keys[SDL_SCANCODE_E]))
+		default:
+			break;
+	}
+
+	// Jump test
+	player->h += player->velH * dt;
+	if (player->state && keys[SDL_SCANCODE_SPACE] && !player->h)
+	{
+		player->velH = 2.8;
+	}
+	if (player->h < player->groundH)
+	{
+		player->velH = 0;
+		player->h = player->groundH;
+	}
+	else if (player->h > player->groundH)
+	{
+		player->velH -= 9.8 * dt;
+	}
+	
+	// Movement code
+	if (player->state)
+	{
+		if (keys[SDL_SCANCODE_LCTRL])
 		{
-			dx = 2 * dt * cos(player->angle-M_PI/4) * speedFactor;
-			dy = 2 * dt * sin(player->angle-M_PI/4) * speedFactor;
-		}
-		else if ((keys[SDL_SCANCODE_S]&&keys[SDL_SCANCODE_Q])||(keys[SDL_SCANCODE_W]&&keys[SDL_SCANCODE_E]))
-		{
-			dx = 2 * dt * cos(player->angle+M_PI/4) * speedFactor;
-			dy = 2 * dt * sin(player->angle+M_PI/4) * speedFactor;
+			player->groundH = -0.15;
 		}
 		else
 		{
-			dx = 2 * dt * cos(player->angle+M_PI/2) * speedFactor;
-			dy = 2 * dt * sin(player->angle+M_PI/2) * speedFactor;
+			player->groundH = 0;
 		}
-		int oldX = (int)floor(player->x);
-		int oldY = (int)floor(player->y);
-		int newX;
-		int newY;
-		double changeX;
-		double changeY;
-		if ((keys[SDL_SCANCODE_W]||(keys[SDL_SCANCODE_E])&&!(keys[SDL_SCANCODE_S])))
+		if ((keys[SDL_SCANCODE_W]||keys[SDL_SCANCODE_S]||keys[SDL_SCANCODE_Q]||keys[SDL_SCANCODE_E])&&!((keys[SDL_SCANCODE_W]&&keys[SDL_SCANCODE_S])||keys[SDL_SCANCODE_Q]&&keys[SDL_SCANCODE_E]))
 		{
-			newX = (int)floor(player->x+dx);
-			changeX = dx;
-			newY = (int)floor(player->y+dy);
-			changeY = dy;
+			double dx = 0;
+			double dy = 0;
+			double speedFactor = 1;
+			if (keys[SDL_SCANCODE_LSHIFT])
+			{
+				speedFactor += 1;
+			}
+			if (keys[SDL_SCANCODE_LCTRL])
+			{
+				speedFactor -= 0.5;
+			}
+			
+			if ((keys[SDL_SCANCODE_W]||keys[SDL_SCANCODE_S])&&!(keys[SDL_SCANCODE_Q]||keys[SDL_SCANCODE_E]))
+			{
+				dx = 2 * dt * cos(player->angle) * speedFactor;
+				dy = 2 * dt * sin(player->angle) * speedFactor;
+			}
+			else if ((keys[SDL_SCANCODE_W]&&keys[SDL_SCANCODE_Q])||(keys[SDL_SCANCODE_S]&&keys[SDL_SCANCODE_E]))
+			{
+				dx = 2 * dt * cos(player->angle-M_PI/4) * speedFactor;
+				dy = 2 * dt * sin(player->angle-M_PI/4) * speedFactor;
+			}
+			else if ((keys[SDL_SCANCODE_S]&&keys[SDL_SCANCODE_Q])||(keys[SDL_SCANCODE_W]&&keys[SDL_SCANCODE_E]))
+			{
+				dx = 2 * dt * cos(player->angle+M_PI/4) * speedFactor;
+				dy = 2 * dt * sin(player->angle+M_PI/4) * speedFactor;
+			}
+			else
+			{
+				dx = 2 * dt * cos(player->angle+M_PI/2) * speedFactor;
+				dy = 2 * dt * sin(player->angle+M_PI/2) * speedFactor;
+			}
+			int oldX = (int)floor(player->x);
+			int oldY = (int)floor(player->y);
+			int newX;
+			int newY;
+			double changeX;
+			double changeY;
+			if ((keys[SDL_SCANCODE_W]||(keys[SDL_SCANCODE_E])&&!(keys[SDL_SCANCODE_S])))
+			{
+				newX = (int)floor(player->x+dx);
+				changeX = dx;
+				newY = (int)floor(player->y+dy);
+				changeY = dy;
+			}
+			else
+			{
+				newX = (int)floor(player->x-dx);
+				changeX = -dx;
+				newY = (int)floor(player->y-dy);
+				changeY = -dy;
+			}
+			if (newX < -map->border)
+			{
+				newX += map->width + map->border * 2;
+				changeX += map->width + map->border * 2;
+			}
+			else if (newX >= map->width + map->border)
+			{
+				newX -= map->width + map->border * 2;
+				changeX -= map->width + map->border * 2;
+			}
+			if (newY < -map->border)
+			{
+				newY += map->height + map->border*2;
+				changeY += map->height + map->border*2;
+			}
+			else if (newY >= map->height + map->border)
+			{
+				newY -= map->height + map->border*2;
+				changeY -= map->height + map->border*2;
+			}
+			player->velX = changeX;
+			player->velY = changeY;
+			if (((newX < 0 || newX >= map->width) || (oldY < 0 || oldY >= map->height)) || map->data[oldY*map->width+newX] == 0)
+				player->x += player->velX;
+			if (((newY < 0 || newY >= map->height) || (oldX < 0 || oldX >= map->width)) || map->data[newY*map->width+oldX] == 0)
+				player->y += player->velY;
 		}
-		else
+		if (keys[SDL_SCANCODE_A])
 		{
-			newX = (int)floor(player->x-dx);
-			changeX = -dx;
-			newY = (int)floor(player->y-dy);
-			changeY = -dy;
+			player->angle -= dt;
 		}
-		if (newX < -map->border)
+		else if (keys[SDL_SCANCODE_D])
 		{
-			newX += map->width + map->border * 2;
-			changeX += map->width + map->border * 2;
+			player->angle += dt;
 		}
-		else if (newX >= map->width + map->border)
+		if (player->angle >= (2 * M_PI))
 		{
-			newX -= map->width + map->border * 2;
-			changeX -= map->width + map->border * 2;
+			player->angle -= (2 * M_PI);
 		}
-		if (newY < -map->border)
+		else if (player->angle < 0)
 		{
-			newY += map->height + map->border*2;
-			changeY += map->height + map->border*2;
+			player->angle += (2 * M_PI);
 		}
-		else if (newY >= map->height + map->border)
-		{
-			newY -= map->height + map->border*2;
-			changeY -= map->height + map->border*2;
-		}
-		if (((newX < 0 || newX >= map->width) || (oldY < 0 || oldY >= map->height)) || map->data[oldY*map->width+newX] == 0)
-				player->x += changeX;
-		if (((newY < 0 || newY >= map->height) || (oldX < 0 || oldX >= map->width)) || map->data[newY*map->width+oldX] == 0)
-				player->y += changeY;
-	}
-	if (keys[SDL_SCANCODE_A])
-	{
-		player->angle -= dt;
-	}
-	else if (keys[SDL_SCANCODE_D])
-	{
-		player->angle += dt;
-	}
-	if (player->angle >= (2 * M_PI))
-	{
-		player->angle -= (2 * M_PI);
-	}
-	else if (player->angle < 0)
-	{
-		player->angle += (2 * M_PI);
 	}
 	player->camera.x = player->x;
 	player->camera.y = player->y;
+	player->camera.h = player->h;
 	player->camera.angle = player->angle;
 }
 

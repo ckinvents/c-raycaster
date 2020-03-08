@@ -7,6 +7,7 @@
 typedef struct _Camera {
 	double x;
 	double y;
+	double h;
 	double angle;
 	double dist;
 	double fov;

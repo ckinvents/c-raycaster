@@ -73,7 +73,7 @@ void PixBuffer_drawTexColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h
     for (int32_t i = 0; i < h; i++)
     {
         // Calculate pixel to draw from texture
-        uint32_t pix = texture->pixData[tileNum*texture->tileWidth*texture->tileHeight + (uint32_t)(((double)(offY + i)/(double)offH)*(texture->tileHeight)) * texture->tileWidth + column];
+        uint32_t pix = texture->pixData[tileNum*texture->tileWidth*texture->tileHeight + (uint32_t)floor(((double)(offY + i)/(double)offH)*(texture->tileHeight)) * texture->tileWidth + column];
         int r = (int)(pix >> 3*8);
         int g = (int)((pix >> 2*8) & 0xFF);
         int b = (int)((pix >> 8) & 0xFF);
@@ -179,6 +179,42 @@ void PixBuffer_drawHorizGradient(PixBuffer* buffer, SDL_Rect* rect, SDL_Color co
                 drawColor.b = colTop.b+(int)(bStep*i);
                 drawColor.a = colTop.a+(int)(aStep*i);
                 PixBuffer_drawRow(buffer, rect->x, rect->y+i, rect->w, drawColor);
+            }
+        }
+    }
+}
+
+void PixBuffer_mergeBuffer(PixBuffer* target, PixBuffer* source, double alpha)
+{
+    uint32_t sourcePix;
+    for (uint32_t i = 0; i < source->height; i++)
+    {
+        if (i < target->height)
+        {
+            for (uint32_t j = 0; j < source->width; j++)
+            {
+                if (j < target->width)
+                {
+                    sourcePix = source->pixels[j+i*source->width];
+                    PixBuffer_drawPixAlpha(target, j, i, sourcePix, alpha);
+                }
+            }
+        }
+    }
+}
+
+void PixBuffer_fillBuffer(PixBuffer* target, uint32_t color, double alpha)
+{
+    for (uint32_t i = 0; i < target->height; i++)
+    {
+        if (i < target->height)
+        {
+            for (uint32_t j = 0; j < target->width; j++)
+            {
+                if (j < target->width)
+                {
+                    PixBuffer_drawPixAlpha(target, j, i, color, alpha);
+                }
             }
         }
     }
@@ -526,5 +562,28 @@ void PixBuffer_drawPix(PixBuffer* buffer, uint32_t x, uint32_t y, uint32_t color
     if (x < buffer->width && y < buffer->height)
     {
         buffer->pixels[y*buffer->width+x] = color;
+    }
+}
+
+void PixBuffer_drawPixAlpha(PixBuffer* buffer, uint32_t x, uint32_t y, uint32_t color, double alphaNum)
+{
+    int r = (int)(color >> 3*8);
+    int g = (int)((color >> 2*8) & 0xFF);
+    int b = (int)((color >> 8) & 0xFF);
+    int a = (int)(color & 0xFF);
+    if (a)
+    {
+        if (alphaNum*a != 0 && alphaNum*a != 255) // Alpha transparency, compute alpha based on array colors
+        {
+            double alpha = ((double)a)/255.0 * (alphaNum);
+            uint32_t oldPix = buffer->pixels[y*buffer->width+x];
+            int oldR = (int)(oldPix >> 3*8);
+            int oldG = (int)((oldPix >> 2*8) & 0xFF);
+            int oldB = (int)((oldPix >> 8) & 0xFF);
+            r = (int)((double)r * alpha + (double)oldR * (1-alpha));
+            g = (int)((double)g * alpha + (double)oldG * (1-alpha));
+            b = (int)((double)b * alpha + (double)oldB * (1-alpha));
+        }
+        PixBuffer_drawPix(buffer, x, y, PixBuffer_toPixColor(r,g,b,0xff));
     }
 }

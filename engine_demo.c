@@ -39,20 +39,36 @@ int main(int argc, char* argv[])
 	uint32_t runTime = 0;
 	double dt = 0;
 
-	unsigned char testMapChar[MAP_WIDTH*MAP_HEIGHT] = {
-		2,2,2,2,2,3,3,9,3,3,
-		2,0,0,0,2,3,0,0,0,3,
-		2,0,5,0,2,3,0,0,0,3,
-		2,0,0,0,0,0,0,0,0,3,
-		2,2,2,2,2,3,3,0,3,3,
-		6,6,6,6,6,0,4,0,4,0,
-		6,0,0,0,6,0,4,0,4,0,
-		6,0,0,0,6,0,4,0,4,0,
-		0,0,0,0,6,4,4,0,4,4,
-		6,0,0,0,6,4,0,0,0,4,
-		0,0,0,0,0,0,0,0,0,4,
-		6,0,0,0,6,4,0,0,0,4,
-		6,6,0,6,6,4,4,4,4,4
+// //	unsigned char testMapChar[MAP_WIDTH*MAP_HEIGHT] = {
+// 		2,2,2,2,2,3,3,9,3,3,
+// 		2,0,0,0,2,3,0,0,0,3,
+// 		2,0,7,0,2,3,0,0,0,3,
+// 		2,0,0,0,0,0,0,0,0,3,
+// 		2,2,2,2,2,3,3,0,3,3,
+// 		6,6,6,6,6,0,4,0,4,0,
+// 		6,0,0,0,6,0,4,0,4,0,
+// 		6,0,0,0,6,0,4,0,4,0,
+// 		0,0,0,0,6,4,4,0,4,4,
+// 		6,0,0,0,6,4,0,0,0,4,
+// 		0,0,0,0,0,0,0,0,0,4,
+// 		6,0,0,0,6,4,0,0,0,4,
+// 		6,6,0,6,6,4,4,4,4,4
+// 	};
+
+		unsigned char testMapChar[MAP_WIDTH*MAP_HEIGHT] = {
+		3,1,2,2,3,3,2,1,2,3,
+		1,0,0,0,1,1,0,0,0,2,
+		1,0,3,0,3,3,0,0,0,1,
+		1,0,0,0,0,0,0,0,0,1,
+		3,1,2,2,3,3,3,0,3,3,
+		3,1,2,1,3,0,1,0,2,0,
+		1,0,0,0,1,0,2,0,1,0,
+		3,0,0,0,2,0,1,0,2,0,
+		0,0,0,0,2,3,3,0,3,3,
+		3,0,0,0,3,3,0,0,0,2,
+		0,0,0,0,0,0,0,0,0,2,
+		3,0,0,0,3,3,0,0,0,1,
+		3,3,0,3,3,3,2,1,1,3
 	};
 
 	static const uint32_t box_data[256] = {
@@ -191,6 +207,11 @@ int main(int argc, char* argv[])
 	mapTex.tileCount = 9;
 	mapTex.tileHeight = 16;
 	mapTex.tileWidth = 16;
+	RayTex worldTex;
+	worldTex.pixData = (uint32_t*)world_tex_data;
+	worldTex.tileCount = 4;
+	worldTex.tileWidth = 32;
+	worldTex.tileHeight = 32;
 
 	// Shadow texture
 	RayTex shadowTex;
@@ -328,7 +349,7 @@ int main(int argc, char* argv[])
 		//PixBuffer_drawBuffOffset(&buffer, &background, WIDTH, HEIGHT, testPlayer.angle*scrollConst);
 		memcpy(buffer.pixels, background.pixels, sizeof(uint32_t)*WIDTH*HEIGHT);
 		//RayEngine_raycastRender(&buffer, testPlayer, WIDTH, HEIGHT, &testMap, 0.01);
-		RayEngine_raycastCompute(rayBuffer, &(testPlayer.camera), WIDTH, HEIGHT, &testMap, 0.01, &mapTex);
+		RayEngine_raycastCompute(rayBuffer, &(testPlayer.camera), WIDTH, HEIGHT, &testMap, 0.01, &worldTex);
 		// Update & draw sprites
 		for (uint8_t s = 0; s < numEntities; s++)
 		{
@@ -337,9 +358,18 @@ int main(int argc, char* argv[])
 			RayEngine_raySpriteCompute(rayBuffer, &(testPlayer.camera), WIDTH, HEIGHT, 0.01, entityList[s].shadow);
 		}
 
-		RayEngine_texRenderFloor(&buffer, &testPlayer.camera, WIDTH, HEIGHT, NULL, 0, &mapTex);
+		RayEngine_texRenderFloor(&buffer, &testPlayer.camera, WIDTH, HEIGHT, NULL, 0, &worldTex);
 		//RayEngine_texRenderCeiling(&buffer, &testPlayer.camera, WIDTH, HEIGHT, NULL, &mapTex, 2+sin(runTimeF*0.5));
 		RayEngine_texRaycastRender(&buffer, WIDTH, HEIGHT, rayBuffer, testPlayer.camera.dist);
+		// Player death animation
+		if (!testPlayer.state && testPlayer.timer < 2)
+		{
+			PixBuffer_fillBuffer(&buffer, PixBuffer_toPixColor(198, 0, 0, 255), 1-(testPlayer.timer/2));
+		}
+		else if (testPlayer.state == 2)
+		{
+			GameEngine_initPlayer(&testPlayer, 1.5, 1.5, 0, M_PI/2, depth, WIDTH);
+		}
 		//RayEngine_draw2DSprite(&buffer, cursorSprite);
 		PixBuffer_orderDither256(&buffer, 5);
 		// Note: between 4 & 10 is good for 16 color palette

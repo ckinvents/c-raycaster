@@ -1,4 +1,20 @@
 ## Changes
+# 08/03/2020
+- engine_demo
+    - Modified test map for new textures
+    - Added test "death animation"
+- gameengine
+    - Added player height, state and camera information
+    - Added expiremental state handling
+    - Added jumping and crouching (unfinished)
+    - Added velocity / vertical acceleration
+- pixrender
+    - Added fillBuffer and mergeBuffer commands for fullscreen animations
+    - Added drawPixAlpha command to simplify writing alpha pixels
+- rayengine
+    - Revamped height, added height control to floors, walls, and sprites
+- asset_list, cobblebrick, world_tex
+    - Added new 32 bit artwork
 # 07/03/2020
 - engine_demo
     - Fixed compile warnings (incompatible types, etc.)

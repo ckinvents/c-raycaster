@@ -22,6 +22,7 @@ void PixBuffer_drawColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h, S
 void PixBuffer_drawTexColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h, RayTex* texture, uint8_t tileNum, double alphaNum, uint32_t column, double fadePercent, SDL_Color targetColor);
 void PixBuffer_drawRect(PixBuffer* buffer, SDL_Rect* rect, SDL_Color color);
 void PixBuffer_drawHorizGradient(PixBuffer* buffer, SDL_Rect* rect, SDL_Color colTop, SDL_Color colBottom);
+void PixBuffer_fillBuffer(PixBuffer* target, uint32_t color, double alpha);
 void PixBuffer_drawBuffOffset(PixBuffer* target, PixBuffer* source, uint32_t x, uint32_t y, int32_t xOff);
 void PixBuffer_clearBuffer(PixBuffer* buffer);
 void PixBuffer_paletteFilter(PixBuffer* buffer, SDL_Color* palette, int paletteNum);
@@ -33,5 +34,6 @@ uint32_t PixBuffer_toPixColor(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 SDL_Color PixBuffer_toSDLColor(uint32_t pixColor);
 uint32_t PixBuffer_getPix(PixBuffer* buffer, uint32_t x, uint32_t y);
 void PixBuffer_drawPix(PixBuffer* buffer, uint32_t x, uint32_t y, uint32_t color);
+void PixBuffer_drawPixAlpha(PixBuffer* buffer, uint32_t x, uint32_t y, uint32_t color, double alphaNum);
 
 #endif//RENDER_H

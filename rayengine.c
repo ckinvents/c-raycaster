@@ -162,7 +162,7 @@ void RayEngine_raySpriteCompute(RayBuffer* rayBuffer, Camera* camera, uint32_t w
 			screenHeight = (int32_t)ceil((double)screenWidth * ((double)sprite.texture->tileHeight / (double)sprite.texture->tileWidth));
 		}
 		
-		int32_t spriteHeight = (int32_t)(sprite.h * height / (spriteDist * 5)); // I dunno why it's 40
+		int32_t spriteHeight = (int32_t)((sprite.h - camera->h) * height / (spriteDist * 5)); // I dunno why it's 40
 		int32_t startX = centerX - screenWidth / 2;
 		int32_t endX = startX + screenWidth;
 		int32_t startY = (int32_t)ceil((height / 2) - ((double)screenHeight / 2) - spriteHeight);
@@ -240,17 +240,18 @@ void RayEngine_raycastCompute(RayBuffer* rayBuffer, Camera* camera, uint32_t wid
 					}
 					double depth = (double)(rayLen * cos(rayAngle - camera->angle));
 					double colorGrad = (depth) / camera->dist;
-					double drawHeight = (double)(height / (depth * 5));
+					int32_t drawHeight = (int32_t)ceil((double)height / (depth * 5));
+					int32_t wallHeight = (int32_t)ceil(-camera->h * height / (depth * 5));
+					int32_t startY = (int32_t)ceil((double)height / 2 - (double)drawHeight / 2 - wallHeight);
 					SDL_Color fadeColor = {77,150,154,255};
-					double jumpHeight = 1;//2 + sin(SDL_GetTicks()/1000.0);
 					//PixBuffer_drawTexColumn(buffer, i, (int)(((double)height / 2.0 - drawHeight)/jumpHeight + height * (1.0 - 1.0/jumpHeight)), (int)drawHeight*2, texData, texCoord, colorGrad, fadeColor);
 					rayBuffer[i].layers[rayBuffer[i].numLayers].texture = texData;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].texCoord = texCoord;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].tileNum = mapTile - 1;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].alphaNum = 1;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].depth = depth;
-					rayBuffer[i].layers[rayBuffer[i].numLayers].yCoord = (int32_t)ceil(((double)height / 2.0 - drawHeight/2));
-					rayBuffer[i].layers[rayBuffer[i].numLayers].height = (int32_t)ceil(drawHeight);
+					rayBuffer[i].layers[rayBuffer[i].numLayers].yCoord = startY;
+					rayBuffer[i].layers[rayBuffer[i].numLayers].height = drawHeight;
 					rayBuffer[i].numLayers++;
 					// Check for texture column transparency
 					uint8_t hasAlpha = 0;
@@ -459,7 +460,7 @@ void RayEngine_texRenderFloor(PixBuffer* buffer, Camera* camera, uint32_t width,
 		for (int y = startY + 1; y < height; y++)
 		{
 			// Compute the distance to the pixel...
-			pixelDist = (double)height / (10.0 * (y-startY-1) * rayCos) * scaleFactor;
+			pixelDist = (double)height * (1 + 2 * camera->h) / (10.0 * (y-startY-1) * rayCos) * scaleFactor;
 			pixelDepth = ((pixelDist / camera->dist) * rayCos);
 			double fogConstant = 4.0/5;
 			if (pixelDepth < camera->dist * fogConstant)
@@ -473,7 +474,7 @@ void RayEngine_texRenderFloor(PixBuffer* buffer, Camera* camera, uint32_t width,
 				// TODO: some grid code...
 				texX = (uint32_t)floor((double)texData->tileWidth * (pixelX - floor(pixelX)));
 				texY = (uint32_t)floor((double)texData->tileHeight * (pixelY - floor(pixelY)));
-				uint32_t pixColor = texData->pixData[texData->tileWidth * texData->tileHeight + texX + texY * texData->tileWidth];
+				uint32_t pixColor = texData->pixData[3 * texData->tileWidth * texData->tileHeight + texX + texY * texData->tileWidth];
 				int r = (int)(pixColor >> 3*8);
 				int g = (int)((pixColor >> 2*8) & 0xFF);
 				int b = (int)((pixColor >> 8) & 0xFF);
