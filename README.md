@@ -19,6 +19,7 @@ Controls:
 - q, e to strafe left and right, respectively
 - a, d to rotate counterclockwise and clockwise (respectively, duh. I'm not a masochist \[hmmm... well...\])
 - shift to sprint in literally every direction (minus turning, personal preference)
+- left control to crouch
 
 Features / Goals:
 - [x] Textured grid-based raycasting on a single plane
@@ -38,7 +39,7 @@ Features / Goals:
 - [ ] Mapable floors / ceilings
 - [ ] Scrolling skyboxes (currently in progress)
 - [ ] Multi-level maps with transitions/procedural generation
-- [ ] Player height
+- [x] Player height
 - [ ] More pixel shaders
 - [ ] Full overlays
 - [ ] Text engine
@@ -46,7 +47,7 @@ Features / Goals:
 - [ ] Single-plane offset walls
 - [ ] Animated wall textures
 - [ ] Interactive objects
-- [ ] Additional, better reference artwork (I'm doing my best, it takes practice)
+- [ ] Additional, better reference artwork (I'm doing my best, it takes practice) (currently in progress)
 - [ ] Controller support (yes, UDXS, including the Steam controller)
 - [ ] Player information (inventory, health, etc)
 - [ ] Maybe make an actual game with this thing???
