@@ -239,7 +239,7 @@ void RayEngine_raycastCompute(RayBuffer* rayBuffer, Camera* camera, uint32_t wid
 						texCoord = (uint32_t)floor((newY - coordY) * texData->tileWidth);
 					}
 					double depth = (double)(rayLen * cos(rayAngle - camera->angle));
-					double colorGrad = (depth) / camera->dist;
+					//double colorGrad = (depth) / camera->dist;
 					int32_t drawHeight = (int32_t)ceil((double)height / (depth * 5));
 					int32_t wallHeight = (int32_t)ceil(-camera->h * height / (depth * 5));
 					int32_t startY = (int32_t)ceil((double)height / 2 - (double)drawHeight / 2 - wallHeight);
@@ -249,7 +249,7 @@ void RayEngine_raycastCompute(RayBuffer* rayBuffer, Camera* camera, uint32_t wid
 					rayBuffer[i].layers[rayBuffer[i].numLayers].texCoord = texCoord;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].tileNum = mapTile - 1;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].alphaNum = 1;
-					rayBuffer[i].layers[rayBuffer[i].numLayers].depth = depth;
+					rayBuffer[i].layers[rayBuffer[i].numLayers].depth = rayLen;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].yCoord = startY;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].height = drawHeight;
 					rayBuffer[i].numLayers++;
@@ -365,7 +365,7 @@ void RayEngine_texRaycastRender(PixBuffer* buffer, uint32_t width, uint32_t heig
 			for (int j = 0; j < rayBuffer[i].numLayers; j++)
 			{
 				double colorGrad;
-				double fogConstant = 4.0/5;
+				double fogConstant = 1.5/5;
 				if (rayBuffer[i].layers[j].depth < (renderDepth*fogConstant))
 				{
 					colorGrad = (rayBuffer[i].layers[j].depth) / (renderDepth*fogConstant);
@@ -461,36 +461,44 @@ void RayEngine_texRenderFloor(PixBuffer* buffer, Camera* camera, uint32_t width,
 		{
 			// Compute the distance to the pixel...
 			pixelDist = (double)height * (1 + 2 * camera->h) / (10.0 * (y-startY-1) * rayCos) * scaleFactor;
-			pixelDepth = ((pixelDist / camera->dist) * rayCos);
 			double fogConstant = 4.0/5;
-			if (pixelDepth < camera->dist * fogConstant)
+			pixelDepth = (pixelDist * rayCos);
+			fadePercent = pixelDist / (camera->dist * fogConstant);
+			pixelX = camera->x + pixelDist * cos(rayAngle);
+			pixelY = camera->y + pixelDist * sin(rayAngle);
+			// Wow, is that really it? The math says so...
+			int r;
+			int g;
+			int b;
+			if (pixelDist < camera->dist * fogConstant)
 			{
-				fadePercent = pixelDepth / (camera->dist * fogConstant);
-				pixelX = camera->x + pixelDist * cos(rayAngle);
-				pixelY = camera->y + pixelDist * sin(rayAngle);
-				// Wow, is that really it? The math says so...
-
 				// Get associated coordinate pixel...
 				// TODO: some grid code...
 				texX = (uint32_t)floor((double)texData->tileWidth * (pixelX - floor(pixelX)));
 				texY = (uint32_t)floor((double)texData->tileHeight * (pixelY - floor(pixelY)));
 				uint32_t pixColor = texData->pixData[3 * texData->tileWidth * texData->tileHeight + texX + texY * texData->tileWidth];
-				int r = (int)(pixColor >> 3*8);
-				int g = (int)((pixColor >> 2*8) & 0xFF);
-				int b = (int)((pixColor >> 8) & 0xFF);
+				r = (int)(pixColor >> 3*8);
+				g = (int)((pixColor >> 2*8) & 0xFF);
+				b = (int)((pixColor >> 8) & 0xFF);
 				int dr = fadeColor.r - r;
 				int dg = fadeColor.g - g;
 				int db = fadeColor.b - b;
 				r += (int)((double)dr * fadePercent);
 				g += (int)((double)dg * fadePercent);
 				b += (int)((double)db * fadePercent);
-				buffer->pixels[x + y * buffer->width] = ((uint32_t)r << 3*8 | (uint32_t)g << 2*8 | (uint32_t)b << 8 | (uint32_t)0xFF);
 			}
+			else
+			{
+				r = fadeColor.r;
+				g = fadeColor.g;
+				b = fadeColor.b;
+			}
+			buffer->pixels[x + y * buffer->width] = ((uint32_t)r << 3*8 | (uint32_t)g << 2*8 | (uint32_t)b << 8 | (uint32_t)0xFF);
 		}
 	}
 }
 
-void RayEngine_texRenderCeiling(PixBuffer* buffer, Camera* camera, uint32_t width, uint32_t height, Map* ceilingMap, RayTex* texData, double hset)
+void RayEngine_texRenderCeiling(PixBuffer* buffer, Camera* camera, uint32_t width, uint32_t height, Map* ceilingMap, RayTex* texData)
 {
 	double scaleFactor = (double)width / (double)height * 2.4;
 
@@ -520,35 +528,43 @@ void RayEngine_texRenderCeiling(PixBuffer* buffer, Camera* camera, uint32_t widt
 		rayAngle = startAngle + camera->angleValues[x];
 		rayCos = cos(rayAngle - camera->angle);
 
-		for (int y = startY + 1; y < height / 2; y++)
+		for (int y = startY; y < height / 2; y++)
 		{
 			// Compute the distance to the pixel...
-			pixelDist = (double)height / (10.0 * (height / 2 - y) * rayCos) * scaleFactor * hset;
-			pixelDepth = ((pixelDist / camera->dist) * rayCos);
+			pixelDist = (double)height * (1 - 2 * camera->h) / (10.0 * (height / 2 - y) * rayCos) * scaleFactor;
+			pixelDepth = (pixelDist * rayCos);
 			double fogConstant = 4.0/5;
-			if (pixelDepth < camera->dist * fogConstant)
+			fadePercent = pixelDist / (camera->dist * fogConstant);
+			pixelX = camera->x + pixelDist * cos(rayAngle);
+			pixelY = camera->y + pixelDist * sin(rayAngle);
+			// Wow, is that really it? The math says so...
+			int r;
+			int g;
+			int b;
+			if (pixelDist < camera->dist * fogConstant)
 			{
-				fadePercent = pixelDepth / (camera->dist * fogConstant);
-				pixelX = camera->x + pixelDist * cos(rayAngle);
-				pixelY = camera->y + pixelDist * sin(rayAngle);
-				// Wow, is that really it? The math says so...
-
 				// Get associated coordinate pixel...
 				// TODO: some grid code...
 				texX = (uint32_t)floor((double)texData->tileWidth * (pixelX - floor(pixelX)));
 				texY = (uint32_t)floor((double)texData->tileHeight * (pixelY - floor(pixelY)));
-				uint32_t pixColor = texData->pixData[texData->tileWidth * texData->tileHeight + texX + texY * texData->tileWidth];
-				int r = (int)(pixColor >> 3*8);
-				int g = (int)((pixColor >> 2*8) & 0xFF);
-				int b = (int)((pixColor >> 8) & 0xFF);
+				uint32_t pixColor = texData->pixData[4 * texData->tileWidth * texData->tileHeight + texX + texY * texData->tileWidth];
+				r = (int)(pixColor >> 3*8);
+				g = (int)((pixColor >> 2*8) & 0xFF);
+				b = (int)((pixColor >> 8) & 0xFF);
 				int dr = fadeColor.r - r;
 				int dg = fadeColor.g - g;
 				int db = fadeColor.b - b;
 				r += (int)((double)dr * fadePercent);
 				g += (int)((double)dg * fadePercent);
 				b += (int)((double)db * fadePercent);
-				buffer->pixels[x + y * buffer->width] = ((uint32_t)r << 3*8 | (uint32_t)g << 2*8 | (uint32_t)b << 8 | (uint32_t)0xFF);
 			}
+			else
+			{
+				r = fadeColor.r;
+				g = fadeColor.g;
+				b = fadeColor.b;
+			}
+			PixBuffer_drawPix(buffer, x, y, PixBuffer_toPixColor(r,g,b,0xff));
 		}
 	}
 }

@@ -1,9 +1,5 @@
 #include <stdint.h>
 
-#define COBBLEBRICK_FRAME_COUNT 1
-#define COBBLEBRICK_FRAME_WIDTH 32
-#define COBBLEBRICK_FRAME_HEIGHT 32
-
 /* Piskel data for "cobblebrick" */
 
 static const uint32_t cobblebrick_data[1][1280] = {

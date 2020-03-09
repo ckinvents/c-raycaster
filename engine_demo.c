@@ -209,7 +209,7 @@ int main(int argc, char* argv[])
 	mapTex.tileWidth = 16;
 	RayTex worldTex;
 	worldTex.pixData = (uint32_t*)world_tex_data;
-	worldTex.tileCount = 4;
+	worldTex.tileCount = 5;
 	worldTex.tileWidth = 32;
 	worldTex.tileHeight = 32;
 
@@ -237,7 +237,7 @@ int main(int argc, char* argv[])
 
 
 	// View depth
-	double depth = 4;
+	double depth = 5;
 	// Demo player
 	double angleValues[WIDTH];
 	Player testPlayer;
@@ -359,7 +359,7 @@ int main(int argc, char* argv[])
 		}
 
 		RayEngine_texRenderFloor(&buffer, &testPlayer.camera, WIDTH, HEIGHT, NULL, 0, &worldTex);
-		//RayEngine_texRenderCeiling(&buffer, &testPlayer.camera, WIDTH, HEIGHT, NULL, &mapTex, 2+sin(runTimeF*0.5));
+		RayEngine_texRenderCeiling(&buffer, &testPlayer.camera, WIDTH, HEIGHT, NULL, &worldTex);
 		RayEngine_texRaycastRender(&buffer, WIDTH, HEIGHT, rayBuffer, testPlayer.camera.dist);
 		// Player death animation
 		if (!testPlayer.state && testPlayer.timer < 2)
@@ -371,6 +371,7 @@ int main(int argc, char* argv[])
 			GameEngine_initPlayer(&testPlayer, 1.5, 1.5, 0, M_PI/2, depth, WIDTH);
 		}
 		//RayEngine_draw2DSprite(&buffer, cursorSprite);
+		//PixBuffer_fillBuffer(&buffer, PixBuffer_toPixColor(50, 0, 50, 255), 0.3);
 		PixBuffer_orderDither256(&buffer, 5);
 		// Note: between 4 & 10 is good for 16 color palette
 		SDL_UpdateTexture(drawTex, NULL, buffer.pixels, sizeof(uint32_t) * WIDTH);
