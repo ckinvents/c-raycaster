@@ -39,36 +39,20 @@ int main(int argc, char* argv[])
 	uint32_t runTime = 0;
 	double dt = 0;
 
-// //	unsigned char testMapChar[MAP_WIDTH*MAP_HEIGHT] = {
-// 		2,2,2,2,2,3,3,9,3,3,
-// 		2,0,0,0,2,3,0,0,0,3,
-// 		2,0,7,0,2,3,0,0,0,3,
-// 		2,0,0,0,0,0,0,0,0,3,
-// 		2,2,2,2,2,3,3,0,3,3,
-// 		6,6,6,6,6,0,4,0,4,0,
-// 		6,0,0,0,6,0,4,0,4,0,
-// 		6,0,0,0,6,0,4,0,4,0,
-// 		0,0,0,0,6,4,4,0,4,4,
-// 		6,0,0,0,6,4,0,0,0,4,
-// 		0,0,0,0,0,0,0,0,0,4,
-// 		6,0,0,0,6,4,0,0,0,4,
-// 		6,6,0,6,6,4,4,4,4,4
-// 	};
-
-		unsigned char testMapChar[MAP_WIDTH*MAP_HEIGHT] = {
-		3,1,2,2,3,3,2,1,2,3,
-		1,0,0,0,1,1,0,0,0,2,
-		1,0,3,0,3,3,0,0,0,1,
-		1,0,0,0,0,0,0,0,0,1,
-		3,1,2,2,3,3,3,0,3,3,
-		3,1,2,1,3,0,1,0,2,0,
-		1,0,0,0,1,0,2,0,1,0,
-		3,0,0,0,2,0,1,0,2,0,
-		0,0,0,0,2,3,3,0,3,3,
-		3,0,0,0,3,3,0,0,0,2,
-		0,0,0,0,0,0,0,0,0,2,
-		3,0,0,0,3,3,0,0,0,1,
-		3,3,0,3,3,3,2,1,1,3
+	unsigned char testMapChar[MAP_WIDTH*MAP_HEIGHT] = {
+		3,1,1,1,3,4,5,5,5,4,
+		1,0,0,0,1,5,0,0,0,5,
+		1,0,2,0,1,5,0,0,0,5,
+		1,0,0,0,0,0,0,0,0,5,
+		3,1,1,1,3,4,5,0,5,4,
+		6,6,6,6,6,0,3,0,4,0,
+		6,0,0,0,6,0,3,0,4,0,
+		6,0,0,0,6,0,3,0,4,0,
+		0,0,0,0,6,3,3,0,3,3,
+		6,0,0,0,6,3,0,0,0,3,
+		0,0,0,0,0,0,0,0,0,3,
+		6,0,0,0,6,3,0,0,0,3,
+		6,6,0,6,6,3,3,3,3,3
 	};
 
 	static const uint32_t box_data[256] = {
@@ -209,7 +193,7 @@ int main(int argc, char* argv[])
 	mapTex.tileWidth = 16;
 	RayTex worldTex;
 	worldTex.pixData = (uint32_t*)world_tex_data;
-	worldTex.tileCount = 5;
+	worldTex.tileCount = 7;
 	worldTex.tileWidth = 32;
 	worldTex.tileHeight = 32;
 
@@ -237,7 +221,7 @@ int main(int argc, char* argv[])
 
 
 	// View depth
-	double depth = 5;
+	double depth = 10;
 	// Demo player
 	double angleValues[WIDTH];
 	Player testPlayer;
@@ -297,11 +281,11 @@ int main(int argc, char* argv[])
 	SDL_Rect gradientRectBottom = {0,HEIGHT/2,WIDTH,HEIGHT/2};
 	//SDL_Color colorBottom1 = {159,197,182,255};
 	//SDL_Color colorBottom2 = {79,172,135,255};
-	SDL_Color colorBottom1 = {50,50,100,255};
+	SDL_Color colorBottom1 = {50,50,80,255};
 	SDL_Color colorBottom2 = {150,150,190,255};
 	// Fog gradient
-	SDL_Color fogFade = {50,50,100,0};
-	SDL_Color fogPrimary = {50,50,100,255};
+	SDL_Color fogFade = {50,50,80,0};
+	SDL_Color fogPrimary = {50,50,80,255};
 	SDL_Rect fogRectBottom = {0,HEIGHT/2+(int)floor((double)HEIGHT/(depth*10)),WIDTH,(int)floor((double)HEIGHT/(depth*10))};
 	SDL_Rect fogRectCenter = {0, HEIGHT/2-(int)floor((double)HEIGHT/(depth*10)),WIDTH, (int)floor((double)HEIGHT/(depth*10))*2};
 	SDL_Rect fogRectTop = {0,HEIGHT/2-(int)floor((double)HEIGHT/(depth*10))*2,WIDTH,(int)floor((double)HEIGHT/(depth*10))};
@@ -358,20 +342,20 @@ int main(int argc, char* argv[])
 			RayEngine_raySpriteCompute(rayBuffer, &(testPlayer.camera), WIDTH, HEIGHT, 0.01, entityList[s].shadow);
 		}
 
-		RayEngine_texRenderFloor(&buffer, &testPlayer.camera, WIDTH, HEIGHT, NULL, 0, &worldTex);
-		RayEngine_texRenderCeiling(&buffer, &testPlayer.camera, WIDTH, HEIGHT, NULL, &worldTex);
+		RayEngine_texRenderFloor(&buffer, &testPlayer.camera, WIDTH, HEIGHT, NULL, 0, &worldTex, 6);
+		RayEngine_texRenderCeiling(&buffer, &testPlayer.camera, WIDTH, HEIGHT, NULL, &worldTex, 7);
 		RayEngine_texRaycastRender(&buffer, WIDTH, HEIGHT, rayBuffer, testPlayer.camera.dist);
 		// Player death animation
 		if (!testPlayer.state && testPlayer.timer < 2)
 		{
-			PixBuffer_fillBuffer(&buffer, PixBuffer_toPixColor(198, 0, 0, 255), 1-(testPlayer.timer/2));
+			PixBuffer_fillBuffer(&buffer, PixBuffer_toPixColor(150, 0, 20, 255), 1-(testPlayer.timer/2));
 		}
 		else if (testPlayer.state == 2)
 		{
 			GameEngine_initPlayer(&testPlayer, 1.5, 1.5, 0, M_PI/2, depth, WIDTH);
 		}
 		//RayEngine_draw2DSprite(&buffer, cursorSprite);
-		//PixBuffer_fillBuffer(&buffer, PixBuffer_toPixColor(50, 0, 50, 255), 0.3);
+		PixBuffer_fillBuffer(&buffer, PixBuffer_toPixColor(50, 0, 50, 255), 0.3);
 		PixBuffer_orderDither256(&buffer, 5);
 		// Note: between 4 & 10 is good for 16 color palette
 		SDL_UpdateTexture(drawTex, NULL, buffer.pixels, sizeof(uint32_t) * WIDTH);

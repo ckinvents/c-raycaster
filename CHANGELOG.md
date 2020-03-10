@@ -1,4 +1,17 @@
 # Changes
+## 09/03/2020
+- engine_demo
+    - Tweaked colors, reimplemented test map
+    - Implemented new textures
+- rayengine
+    - Unfinished 2D texture renderer
+    - Unified fog color
+    - Added floor/ceiling tile indexing
+- world_tex
+    - Added new assets
+- Makefile/License
+    - Added makefile (finally)
+    - Added MIT license
 ## 08/03/2020
 - engine_demo
     - Modified test map for new textures

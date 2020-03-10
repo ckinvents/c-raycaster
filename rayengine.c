@@ -13,6 +13,8 @@
 #include "rayengine.h"
 #include <stdio.h>
 
+#define FOG_COLOR {50,50,80,255}//{77,150,154,255}
+
 const uint8_t* keys;
 double getInterDist(double dx, double dy, double xi, double yi, double coordX, double coordY, double* newX, double* newY, uint8_t* side);
 
@@ -55,6 +57,15 @@ void RayEngine_draw2DSprite(PixBuffer* buffer, RaySprite sprite)
 			PixBuffer_drawTexColumn(buffer, i, startY, screenHeight, sprite.texture, sprite.frameNum, sprite.alphaNum, columnNum, 0, dummyColor);
 		}
 	}
+}
+
+void RayEngine_draw2DFrag(PixBuffer* buffer, RaySprite sprite, SDL_Rect fragCoords)
+{
+	// First, compute screen-space sprite dimensions
+	int32_t screenWidth = (int32_t)((double)sprite.texture->tileWidth*sprite.scaleFactor);
+	int32_t screenHeight = (int32_t)((double)sprite.texture->tileHeight*sprite.scaleFactor);
+	int32_t startX = (int32_t)(sprite.x - screenWidth / 2);
+	int32_t startY = (int32_t)(sprite.y - screenHeight / 2);
 }
 
 void RayEngine_drawMinimap(PixBuffer* buffer, Camera* camera, unsigned int width, unsigned int height, Map* map, int blockSize)
@@ -243,8 +254,7 @@ void RayEngine_raycastCompute(RayBuffer* rayBuffer, Camera* camera, uint32_t wid
 					int32_t drawHeight = (int32_t)ceil((double)height / (depth * 5));
 					int32_t wallHeight = (int32_t)ceil(-camera->h * height / (depth * 5));
 					int32_t startY = (int32_t)ceil((double)height / 2 - (double)drawHeight / 2 - wallHeight);
-					SDL_Color fadeColor = {77,150,154,255};
-					//PixBuffer_drawTexColumn(buffer, i, (int)(((double)height / 2.0 - drawHeight)/jumpHeight + height * (1.0 - 1.0/jumpHeight)), (int)drawHeight*2, texData, texCoord, colorGrad, fadeColor);
+					//SDL_Color fadeColor = {77,150,154,255};
 					rayBuffer[i].layers[rayBuffer[i].numLayers].texture = texData;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].texCoord = texCoord;
 					rayBuffer[i].layers[rayBuffer[i].numLayers].tileNum = mapTile - 1;
@@ -347,7 +357,7 @@ void RayEngine_raycastCompute(RayBuffer* rayBuffer, Camera* camera, uint32_t wid
 
 void RayEngine_texRaycastRender(PixBuffer* buffer, uint32_t width, uint32_t height, RayBuffer* rayBuffer, double renderDepth)
 {
-	SDL_Color fadeColor = {50,50,100,255};
+	SDL_Color fadeColor = FOG_COLOR;
 	SDL_Color colorDat = {0,0,0,0};
 	// For each screenwidth column
 	for (int i = 0; i < width; i++)
@@ -427,7 +437,7 @@ double getInterDist(double dx, double dy, double xi, double yi, double coordX, d
 	return minDist;
 }
 
-void RayEngine_texRenderFloor(PixBuffer* buffer, Camera* camera, uint32_t width, uint32_t height, Map* groundMap, double resolution, RayTex* texData)
+void RayEngine_texRenderFloor(PixBuffer* buffer, Camera* camera, uint32_t width, uint32_t height, Map* groundMap, double resolution, RayTex* texData, uint8_t tileNum)
 {
 	double scaleFactor = (double)width / (double)height * 2.4;
 
@@ -448,7 +458,7 @@ void RayEngine_texRenderFloor(PixBuffer* buffer, Camera* camera, uint32_t width,
 	double rayAngle;
 	double rayCos;
 
-	SDL_Color fadeColor = {50,50,100,255};
+	SDL_Color fadeColor = FOG_COLOR;
 	
 	// iterate through *all* pixels...
 	for (int x = startX; x < width; x++)
@@ -476,7 +486,7 @@ void RayEngine_texRenderFloor(PixBuffer* buffer, Camera* camera, uint32_t width,
 				// TODO: some grid code...
 				texX = (uint32_t)floor((double)texData->tileWidth * (pixelX - floor(pixelX)));
 				texY = (uint32_t)floor((double)texData->tileHeight * (pixelY - floor(pixelY)));
-				uint32_t pixColor = texData->pixData[3 * texData->tileWidth * texData->tileHeight + texX + texY * texData->tileWidth];
+				uint32_t pixColor = texData->pixData[tileNum * texData->tileWidth * texData->tileHeight + texX + texY * texData->tileWidth];
 				r = (int)(pixColor >> 3*8);
 				g = (int)((pixColor >> 2*8) & 0xFF);
 				b = (int)((pixColor >> 8) & 0xFF);
@@ -498,7 +508,7 @@ void RayEngine_texRenderFloor(PixBuffer* buffer, Camera* camera, uint32_t width,
 	}
 }
 
-void RayEngine_texRenderCeiling(PixBuffer* buffer, Camera* camera, uint32_t width, uint32_t height, Map* ceilingMap, RayTex* texData)
+void RayEngine_texRenderCeiling(PixBuffer* buffer, Camera* camera, uint32_t width, uint32_t height, Map* ceilingMap, RayTex* texData, uint8_t tileNum)
 {
 	double scaleFactor = (double)width / (double)height * 2.4;
 
@@ -519,7 +529,7 @@ void RayEngine_texRenderCeiling(PixBuffer* buffer, Camera* camera, uint32_t widt
 	double rayAngle;
 	double rayCos;
 
-	SDL_Color fadeColor = {50,50,100,255};
+	SDL_Color fadeColor = FOG_COLOR;
 	
 	// iterate through *all* pixels...
 	for (int x = startX; x < width; x++)
@@ -547,7 +557,7 @@ void RayEngine_texRenderCeiling(PixBuffer* buffer, Camera* camera, uint32_t widt
 				// TODO: some grid code...
 				texX = (uint32_t)floor((double)texData->tileWidth * (pixelX - floor(pixelX)));
 				texY = (uint32_t)floor((double)texData->tileHeight * (pixelY - floor(pixelY)));
-				uint32_t pixColor = texData->pixData[4 * texData->tileWidth * texData->tileHeight + texX + texY * texData->tileWidth];
+				uint32_t pixColor = texData->pixData[tileNum * texData->tileWidth * texData->tileHeight + texX + texY * texData->tileWidth];
 				r = (int)(pixColor >> 3*8);
 				g = (int)((pixColor >> 2*8) & 0xFF);
 				b = (int)((pixColor >> 8) & 0xFF);
