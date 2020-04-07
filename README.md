@@ -15,9 +15,11 @@ Update: Now there's a makefile. (Yay!)
 Controls:
 - w, s to move forward and backwards
 - q, e to strafe left and right, respectively
-- a, d to rotate counterclockwise and clockwise (respectively, duh. I'm not a masochist \[hmmm... well...\])
+- a, d to rotate counterclockwise and clockwise (respectively, duh)
 - shift to sprint in literally every direction (minus turning, personal preference)
 - left control to crouch
+- k to, er, kill the player
+- r to respawn when dead
 
 Features / Goals:
 - [x] Textured grid-based raycasting on a single plane
