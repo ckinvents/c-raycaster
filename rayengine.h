@@ -1,7 +1,6 @@
 #ifndef RAYENGINE_H
 #define RAYENGINE_H
 
-#include <SDL2/SDL.h>
 #include "pixrender.h"
 
 typedef struct _Camera {

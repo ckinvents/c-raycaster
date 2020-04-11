@@ -475,11 +475,15 @@ void PixBuffer_orderDither256(PixBuffer* buffer, double scaleFactor)
     }
 }
 
-void PixBuffer_monochromeFilter(PixBuffer* buffer, double fadePercent)
+void PixBuffer_monochromeFilter(PixBuffer* buffer, SDL_Color targetColor, double fadePercent)
 {
     SDL_Color oldColor;
     int targetAvg;
     uint32_t newColor;
+
+    double targetR = targetColor.r/255.0;
+    double targetG = targetColor.g/255.0;
+    double targetB = targetColor.b/255.0;
 
     int dr;
     int dg;
@@ -494,7 +498,7 @@ void PixBuffer_monochromeFilter(PixBuffer* buffer, double fadePercent)
             dr = (targetAvg - oldColor.r) * fadePercent;
             dg = (targetAvg - oldColor.g) * fadePercent;
             db = (targetAvg - oldColor.b) * fadePercent;
-            newColor = PixBuffer_toPixColor((uint8_t)(oldColor.r + dr), (uint8_t)(oldColor.g + dg), (uint8_t)(oldColor.b + db), (uint8_t)oldColor.a);
+            newColor = PixBuffer_toPixColor((uint8_t)(targetR*(oldColor.r + dr)), (uint8_t)(targetG*(oldColor.g + dg)), (uint8_t)(targetB*(oldColor.b + db)), (uint8_t)oldColor.a);
             PixBuffer_drawPix(buffer, x, y, newColor);
         }
     }

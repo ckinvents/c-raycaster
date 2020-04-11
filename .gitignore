@@ -4,3 +4,5 @@
 /.vscode/*
 /private_assets
 !Makefile
+*.dll
+*.exe

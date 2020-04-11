@@ -2,6 +2,7 @@
 #define GAMEENGINE_H
 
 #include "rayengine.h"
+//#include <SDL2/SDL_mixer.h>
 
 typedef struct _Player {
 	double x;
@@ -17,6 +18,7 @@ typedef struct _Player {
     double timer;
     uint8_t spacePressed;
     Camera camera;
+    //Mix_Chunk* walkSound;
 } Player;
 
 typedef struct _Entity {

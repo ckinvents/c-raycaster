@@ -1,7 +1,9 @@
 #ifndef RENDER_H
 #define RENDER_H
 
-#include <SDL2/SDL.h>
+#include "SDL2/SDL.h"
+#include <stdio.h>
+#include <math.h>
 #define WIDDERSHINS 1024
 #define TURNWISE 896
 
@@ -28,7 +30,7 @@ void PixBuffer_clearBuffer(PixBuffer* buffer);
 void PixBuffer_paletteFilter(PixBuffer* buffer, SDL_Color* palette, int paletteNum);
 void PixBuffer_orderDither(PixBuffer* buffer, SDL_Color* palette, int paletteNum, double scaleFactor);
 void PixBuffer_orderDither256(PixBuffer* buffer, double scaleFactor);
-void PixBuffer_monochromeFilter(PixBuffer* buffer, double fadePercent);
+void PixBuffer_monochromeFilter(PixBuffer* buffer, SDL_Color targetColor, double fadePercent);
 void PixBuffer_inverseFilter(PixBuffer* buffer);
 uint32_t PixBuffer_toPixColor(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 SDL_Color PixBuffer_toSDLColor(uint32_t pixColor);

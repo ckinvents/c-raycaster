@@ -13,7 +13,7 @@
 #include "rayengine.h"
 #include <stdio.h>
 
-#define FOG_COLOR {50,50,80,255}//{77,150,154,255}
+#define FOG_COLOR {50,20,50,255};//{50,50,80,255}//{77,150,154,255}
 
 const uint8_t* keys;
 double getInterDist(double dx, double dy, double xi, double yi, double coordX, double coordY, double* newX, double* newY, uint8_t* side);

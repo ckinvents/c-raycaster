@@ -1,4 +1,3 @@
-#include <SDL2/SDL.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -26,7 +25,8 @@ SDL_Color BLACK = {0,0,0,255};
 
 int main(int argc, char* argv[])
 {
-	SDL_Init(SDL_INIT_VIDEO);
+	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
+
 	const uint8_t* keys = SDL_GetKeyboardState(NULL);
 
 	window = SDL_CreateWindow(
@@ -36,8 +36,8 @@ int main(int argc, char* argv[])
 		SDL_WINDOW_OPENGL
 	);
 
-	uint32_t runTime = 0;
-	double dt = 0;
+	//Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
+	const char testAudioFile[] = "assets/step.wav";
 
 	unsigned char testMapChar[MAP_WIDTH*MAP_HEIGHT] = {
 		3,1,1,1,3,4,5,5,5,4,
@@ -221,7 +221,7 @@ int main(int argc, char* argv[])
 
 
 	// View depth
-	double depth = 10;
+	double depth = 3;
 	// Demo player
 	double angleValues[WIDTH];
 	Player testPlayer;
@@ -243,7 +243,7 @@ int main(int argc, char* argv[])
 
 	// Test cursor sprite
 	RaySprite cursorSprite;
-	RayEngine_initSprite(&cursorSprite, &spriteTexs[9], 1, 0.5, WIDTH/2, HEIGHT/2, 0);
+	RayEngine_initSprite(&cursorSprite, &spriteTexs[9], 1, 0.3, WIDTH/2, HEIGHT/2, 0);
 
 	// Allocate depth buffer 
 	RayBuffer rayBuffer[WIDTH];
@@ -267,6 +267,11 @@ int main(int argc, char* argv[])
 	buffer.height = HEIGHT;
 	SDL_Rect screenRect = {0,0,WIDTH,HEIGHT};
 
+	SDL_Color nightSky = {20,0,20,255};
+	SDL_Color nightHorizon = {50,20,50,255};
+	SDL_Color eveningSky =  {0x5c,0x57,0xff,255};
+	SDL_Color eveningHorizon = {0xff,0x40,0x00,255};
+
 	// Generate background texture
 	uint32_t texPixels[WIDTH * HEIGHT];
 	PixBuffer background;
@@ -276,16 +281,16 @@ int main(int argc, char* argv[])
 	SDL_Rect gradientRectTop = {0,0,WIDTH,HEIGHT/2};
 	//SDL_Color colorTop1 = {189,255,255,255};//{255,100,100,255};
 	//SDL_Color colorTop2 = {77,150,154,255};//{0,0,100,255};
-	SDL_Color colorTop1 = {0x5c,0x57,0xff,255};
-	SDL_Color colorTop2 = {0xff,0x40,0x00,255};
+	SDL_Color colorTop1 = nightSky;//{0x5c,0x57,0xff,255};
+	SDL_Color colorTop2 = nightHorizon;//{0xff,0x40,0x00,255};
 	SDL_Rect gradientRectBottom = {0,HEIGHT/2,WIDTH,HEIGHT/2};
 	//SDL_Color colorBottom1 = {159,197,182,255};
 	//SDL_Color colorBottom2 = {79,172,135,255};
 	SDL_Color colorBottom1 = {50,50,80,255};
 	SDL_Color colorBottom2 = {150,150,190,255};
 	// Fog gradient
-	SDL_Color fogFade = {50,50,80,0};
-	SDL_Color fogPrimary = {50,50,80,255};
+	SDL_Color fogFade = {50,20,50,0};//{50,50,80,0};
+	SDL_Color fogPrimary = nightHorizon;//{50,50,80,255};
 	SDL_Rect fogRectBottom = {0,HEIGHT/2+(int)floor((double)HEIGHT/(depth*10)),WIDTH,(int)floor((double)HEIGHT/(depth*10))};
 	SDL_Rect fogRectCenter = {0, HEIGHT/2-(int)floor((double)HEIGHT/(depth*10)),WIDTH, (int)floor((double)HEIGHT/(depth*10))*2};
 	SDL_Rect fogRectTop = {0,HEIGHT/2-(int)floor((double)HEIGHT/(depth*10))*2,WIDTH,(int)floor((double)HEIGHT/(depth*10))};
@@ -300,28 +305,47 @@ int main(int argc, char* argv[])
 	
 	// State variables
 	uint8_t quit = 0;
+	uint8_t paused = 0;
+	uint8_t pauseKeyPressed = 0;
 	uint8_t frameCounter = 0;
-	double runTimeF = 0;
+	uint32_t realRunTime = 0;
+	double realRunTimeF = 0;
+	double dt = 0;
+	uint32_t runTime = SDL_GetTicks();
+	double runTimeF = (double)runTime/1000;
 	while(!quit)
 	{
 		// **Update Routine**
-		runTime = SDL_GetTicks();		
-		runTimeF = (double)runTime/1000;
+		realRunTime = SDL_GetTicks();		
+		realRunTimeF = (double)realRunTime/1000;
 		while (SDL_PollEvent(&event))
 		{
 			if (event.type == SDL_QUIT || (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_ESCAPE))
 			{
 				quit = 1;
 			}
+			else if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_DELETE && !pauseKeyPressed)
+			{
+				paused = !paused;
+				pauseKeyPressed = 1;
+			}
+			else if (event.type == SDL_KEYUP && event.key.keysym.scancode == SDL_SCANCODE_DELETE)
+			{
+				pauseKeyPressed = 0;
+			}
 		}
-		GameEngine_updatePlayer(&testPlayer, &testMap, dt);
-		// Sprite movement
-		for (int s = 1; s < 9; s++)
+		// Update if not paused
+		if (!paused)
 		{
-			GameEngine_moveEntity(&entityList[s], 2.5 + cos(runTimeF+(s-1)*M_PI/4), 7.5 + sin(runTimeF+(s-1)*M_PI/4), 0);
-			entityList[s].sprite.frameNum = (runTime)%30;
+			GameEngine_updatePlayer(&testPlayer, &testMap, dt);
+			// Sprite movement
+			for (int s = 1; s < 9; s++)
+			{
+				GameEngine_moveEntity(&entityList[s], 2.5 + cos(runTimeF+(s-1)*M_PI/4), 7.5 + sin(runTimeF+(s-1)*M_PI/4), 0);
+				entityList[s].sprite.frameNum = (runTime)%30;
+			}
+			entityList[0].sprite.frameNum = 29-(runTime/100)%30;
 		}
-		entityList[0].sprite.frameNum = 29-(runTime/100)%30;
 
 		// **Render Routine**
 		// Clear, draw line and update
@@ -337,7 +361,10 @@ int main(int argc, char* argv[])
 		// Update & draw sprites
 		for (uint8_t s = 0; s < numEntities; s++)
 		{
-			GameEngine_updateEntity(&entityList[s]);
+			if (!paused)
+			{
+				GameEngine_updateEntity(&entityList[s]);
+			}
 			RayEngine_raySpriteCompute(rayBuffer, &(testPlayer.camera), WIDTH, HEIGHT, 0.01, entityList[s].sprite);
 			RayEngine_raySpriteCompute(rayBuffer, &(testPlayer.camera), WIDTH, HEIGHT, 0.01, entityList[s].shadow);
 		}
@@ -354,14 +381,27 @@ int main(int argc, char* argv[])
 		{
 			GameEngine_initPlayer(&testPlayer, 1.5, 1.5, 0, M_PI/2, depth, WIDTH);
 		}
-		//RayEngine_draw2DSprite(&buffer, cursorSprite);
-		PixBuffer_fillBuffer(&buffer, PixBuffer_toPixColor(50, 0, 50, 255), 0.3);
+		RayEngine_draw2DSprite(&buffer, cursorSprite);
+		//PixBuffer_fillBuffer(&buffer, PixBuffer_toPixColor(50, 50, 50, 255), 0.2);
+
+		if (paused)
+		{
+			SDL_Color monoGrey = {233,214,255,255};//{153, 140, 168, 255};
+			PixBuffer_monochromeFilter(&buffer, monoGrey, 0.8);
+		}
 		PixBuffer_orderDither256(&buffer, 5);
+		
+		//PixBuffer_orderDither(&buffer, gameboyColorPalette, 4, 5);
 		// Note: between 4 & 10 is good for 16 color palette
 		SDL_UpdateTexture(drawTex, NULL, buffer.pixels, sizeof(uint32_t) * WIDTH);
 		SDL_RenderCopy(renderer, drawTex, NULL, NULL);
 		SDL_RenderPresent(renderer);
-		dt = 0.001 * (double)(SDL_GetTicks() - runTime);
+		dt = 0.001 * (double)(SDL_GetTicks() - realRunTime);
+		if (!paused)
+		{
+			runTimeF += dt;
+			runTime += SDL_GetTicks() - realRunTime;
+		}
 	}
 
 

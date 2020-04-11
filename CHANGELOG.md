@@ -1,4 +1,14 @@
 # Changes
+## 11/04/2020
+- engine_demo
+    - Tweaked colors (again)
+    - Implemented pause function
+- gameengine
+    - Started on sound engine
+- Makefile
+    - Added windows target (note: need to set own SDL2 directories!!!)
+- pixrender
+    - Extended monochrome shader, now supports target colors
 ## 09/03/2020
 - engine_demo
     - Tweaked colors, reimplemented test map
@@ -28,7 +38,6 @@
     - Revamped height, added height control to floors, walls, and sprites
 - asset_list, cobblebrick, world_tex
     - Added new 32 bit artwork
-# Changes
 ## 07/03/2020
 - engine_demo
     - Fixed compile warnings (incompatible types, etc.)
