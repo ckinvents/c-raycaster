@@ -49,7 +49,7 @@ typedef struct _RaySprite {
 
 void RayEngine_generateMap(Map* newMap, unsigned char* charList, int width, int height, int border, SDL_Color* colorData, int numColor);
 void RayEngine_initSprite(RaySprite* newSprite, RayTex* texture, double scaleFactor, double alphaNum, double x, double y, double h);
-void RayEngine_draw2DSprite(PixBuffer* buffer, RaySprite sprite);
+void RayEngine_draw2DSprite(PixBuffer* buffer, RaySprite sprite, double angle);
 void RayEngine_generateAngleValues(uint32_t width, Camera* camera);
 void RayEngine_raySpriteCompute(RayBuffer* rayBuffer, Camera* camera, uint32_t width, uint32_t height, double resolution, RaySprite sprite);
 void RayEngine_raycastCompute(RayBuffer* rayBuffer, Camera* camera, uint32_t width, uint32_t height, Map* map, double resolution, RayTex* texData);

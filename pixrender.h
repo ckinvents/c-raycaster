@@ -35,7 +35,9 @@ void PixBuffer_inverseFilter(PixBuffer* buffer);
 uint32_t PixBuffer_toPixColor(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 SDL_Color PixBuffer_toSDLColor(uint32_t pixColor);
 uint32_t PixBuffer_getPix(PixBuffer* buffer, uint32_t x, uint32_t y);
+uint32_t PixBuffer_getTex(RayTex* texture, uint8_t tileNum, uint32_t x, uint32_t y);
 void PixBuffer_drawPix(PixBuffer* buffer, uint32_t x, uint32_t y, uint32_t color);
 void PixBuffer_drawPixAlpha(PixBuffer* buffer, uint32_t x, uint32_t y, uint32_t color, double alphaNum);
+void PixBuffer_drawPixDouble(PixBuffer* buffer, double x, double y, uint32_t color, double alphaNum);
 
 #endif//RENDER_H

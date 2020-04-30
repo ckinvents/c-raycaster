@@ -7,6 +7,10 @@ linux:
 	gcc pixrender.c rayengine.c gameengine.c engine_demo.c \
 	-lm -lSDL2 -lSDL2main -O3 -o build/linux/engine_demo
 
+linux-debug:
+	gcc pixrender.c rayengine.c gameengine.c engine_demo.c \
+	-lm -lSDL2 -lSDL2main -g -o debug/linux/engine_demo
+
 windows:
 	x86_64-w64-mingw32-gcc -I../../../win_libs/SDL2/x86_64-w64-mingw32/include \
 	pixrender.c rayengine.c gameengine.c engine_demo.c \

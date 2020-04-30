@@ -227,6 +227,25 @@ int main(int argc, char* argv[])
 	Player testPlayer;
 	GameEngine_initPlayer(&testPlayer, 1.5, 1.5, 0, M_PI/2, depth, WIDTH);
 
+	// Init keymapping
+	KeyMap testKeys;
+	uint8_t keyList[] = {
+		PK_FORWARD, SDL_SCANCODE_W, 0,
+		PK_BACKWARD, SDL_SCANCODE_S, 0,
+		PK_LSTRAFE, SDL_SCANCODE_A, 0,
+		PK_RSTRAFE, SDL_SCANCODE_D, 0,
+		PK_TC, SDL_SCANCODE_Q, SDL_SCANCODE_RIGHT,
+		PK_TCC, SDL_SCANCODE_E, SDL_SCANCODE_LEFT,
+		PK_JUMP, SDL_SCANCODE_SPACE, 0,
+		PK_CROUCH, SDL_SCANCODE_LCTRL, 0,
+		PK_SPRINT, SDL_SCANCODE_LSHIFT, 0,
+		PK_PAUSE, SDL_SCANCODE_DELETE, 0,
+		PK_KILL, SDL_SCANCODE_K, 0,
+		PK_RESPAWN, SDL_SCANCODE_R, 0,
+		TERMINATE_PK
+	};
+	GameEngine_bindKeys(&testKeys, keyList);
+
 	// Demo spritelist with sprites
 	Entity entityList[10];
 	uint8_t numEntities = 10;
@@ -238,7 +257,7 @@ int main(int argc, char* argv[])
 	}
 	GameEngine_initEntity(&entityList[9], 7.5, 10.5, -0.375, 0, &spriteTexs[8], &shadowTex); // Test ball -0.375
 	GameEngine_scaleEntity(&entityList[9], 0.25); //0.25
-	entityList[9].sprite.alphaNum = 0.5;
+	entityList[9].sprite.alphaNum = 1;
 	GameEngine_moveEntity(&entityList[0], 2.5, 7.5, 0); // Big Thonk
 
 	// Test cursor sprite
@@ -271,6 +290,7 @@ int main(int argc, char* argv[])
 	SDL_Color nightHorizon = {50,20,50,255};
 	SDL_Color eveningSky =  {0x5c,0x57,0xff,255};
 	SDL_Color eveningHorizon = {0xff,0x40,0x00,255};
+	SDL_Color white = {0xff,0xff,0xff,0xff};
 
 	// Generate background texture
 	uint32_t texPixels[WIDTH * HEIGHT];
@@ -281,8 +301,8 @@ int main(int argc, char* argv[])
 	SDL_Rect gradientRectTop = {0,0,WIDTH,HEIGHT/2};
 	//SDL_Color colorTop1 = {189,255,255,255};//{255,100,100,255};
 	//SDL_Color colorTop2 = {77,150,154,255};//{0,0,100,255};
-	SDL_Color colorTop1 = nightSky;//{0x5c,0x57,0xff,255};
-	SDL_Color colorTop2 = nightHorizon;//{0xff,0x40,0x00,255};
+	SDL_Color colorTop1 = eveningSky;//{0x5c,0x57,0xff,255};
+	SDL_Color colorTop2 = eveningHorizon;//{0xff,0x40,0x00,255};
 	SDL_Rect gradientRectBottom = {0,HEIGHT/2,WIDTH,HEIGHT/2};
 	//SDL_Color colorBottom1 = {159,197,182,255};
 	//SDL_Color colorBottom2 = {79,172,135,255};
@@ -313,8 +333,12 @@ int main(int argc, char* argv[])
 	double dt = 0;
 	uint32_t runTime = SDL_GetTicks();
 	double runTimeF = (double)runTime/1000;
+
+	double toggleSaturation = 0;
 	while(!quit)
 	{
+		GameEngine_updateKeys(&testKeys);
+		const uint8_t* keys = SDL_GetKeyboardState(NULL);
 		// **Update Routine**
 		realRunTime = SDL_GetTicks();		
 		realRunTimeF = (double)realRunTime/1000;
@@ -337,7 +361,7 @@ int main(int argc, char* argv[])
 		// Update if not paused
 		if (!paused)
 		{
-			GameEngine_updatePlayer(&testPlayer, &testMap, dt);
+			GameEngine_updatePlayer(&testPlayer, &testMap, &testKeys, dt);
 			// Sprite movement
 			for (int s = 1; s < 9; s++)
 			{
@@ -345,6 +369,16 @@ int main(int argc, char* argv[])
 				entityList[s].sprite.frameNum = (runTime)%30;
 			}
 			entityList[0].sprite.frameNum = 29-(runTime/100)%30;
+
+			// Saturation test
+			if (keys[SDL_SCANCODE_UP])
+			{
+				toggleSaturation -= dt;
+			}
+			else if (keys[SDL_SCANCODE_DOWN])
+			{
+				toggleSaturation += dt;
+			}
 		}
 
 		// **Render Routine**
@@ -370,7 +404,7 @@ int main(int argc, char* argv[])
 		}
 
 		RayEngine_texRenderFloor(&buffer, &testPlayer.camera, WIDTH, HEIGHT, NULL, 0, &worldTex, 6);
-		RayEngine_texRenderCeiling(&buffer, &testPlayer.camera, WIDTH, HEIGHT, NULL, &worldTex, 7);
+		//RayEngine_texRenderCeiling(&buffer, &testPlayer.camera, WIDTH, HEIGHT, NULL, &worldTex, 7);
 		RayEngine_texRaycastRender(&buffer, WIDTH, HEIGHT, rayBuffer, testPlayer.camera.dist);
 		// Player death animation
 		if (!testPlayer.state && testPlayer.timer < 2)
@@ -381,18 +415,23 @@ int main(int argc, char* argv[])
 		{
 			GameEngine_initPlayer(&testPlayer, 1.5, 1.5, 0, M_PI/2, depth, WIDTH);
 		}
-		RayEngine_draw2DSprite(&buffer, cursorSprite);
+		RayEngine_draw2DSprite(&buffer, cursorSprite, 2*runTimeF);
 		//PixBuffer_fillBuffer(&buffer, PixBuffer_toPixColor(50, 50, 50, 255), 0.2);
 
+		//PixBuffer_fillBuffer(&buffer, PixBuffer_toPixColor(150,0,20,255), 1);
+		//PixBuffer_monochromeFilter(&buffer, white, toggleSaturation);
+		SDL_Color sepiaPink = {221,153,153,255};
+		//PixBuffer_monochromeFilter(&buffer, sepiaPink, 1);
+		//PixBuffer_monochromeFilter(&buffer, white, 4.442);
 		if (paused)
 		{
 			SDL_Color monoGrey = {233,214,255,255};//{153, 140, 168, 255};
-			PixBuffer_monochromeFilter(&buffer, monoGrey, 0.8);
+			PixBuffer_monochromeFilter(&buffer, sepiaPink, 1);
 		}
-		PixBuffer_orderDither256(&buffer, 5);
-		
+
 		//PixBuffer_orderDither(&buffer, gameboyColorPalette, 4, 5);
 		// Note: between 4 & 10 is good for 16 color palette
+		PixBuffer_orderDither256(&buffer, 5);
 		SDL_UpdateTexture(drawTex, NULL, buffer.pixels, sizeof(uint32_t) * WIDTH);
 		SDL_RenderCopy(renderer, drawTex, NULL, NULL);
 		SDL_RenderPresent(renderer);

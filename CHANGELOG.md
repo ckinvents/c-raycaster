@@ -1,4 +1,19 @@
 # Changes
+## 30/04/2020
+- engine_demo
+    - Added keymap
+    - Tweaked color settings
+    - Added filter test code (temporary)
+- gameengine
+    - Added keymapping functionality and keymap enum
+    - Added player keymap compatibility
+- pixrender
+    - Fixed monochrome filter
+    - Added texel retrieval code
+    - Added rounded pixel code
+- rayengine
+    - Improved 2D sprite drawing, added rotation
+    
 ## 11/04/2020
 - engine_demo
     - Tweaked colors (again)

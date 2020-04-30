@@ -39,22 +39,34 @@ void RayEngine_initSprite(RaySprite* newSprite, RayTex* texture, double scaleFac
 	newSprite->frameNum = 0;
 }
 
-void RayEngine_draw2DSprite(PixBuffer* buffer, RaySprite sprite)
+void RayEngine_draw2DSprite(PixBuffer* buffer, RaySprite sprite, double angle)
 {
 	// First, compute screen-space sprite dimensions
-	int32_t screenWidth = (int32_t)((double)sprite.texture->tileWidth*sprite.scaleFactor);
-	int32_t screenHeight = (int32_t)((double)sprite.texture->tileHeight*sprite.scaleFactor);
-	int32_t startX = (int32_t)(sprite.x - screenWidth / 2);
-	int32_t startY = (int32_t)(sprite.y - screenHeight / 2);
+	double scaleWidth = sprite.texture->tileWidth*sprite.scaleFactor;
+	double scaleHeight = sprite.texture->tileHeight*sprite.scaleFactor;
+	int32_t boundSize = (uint32_t)(scaleWidth > scaleHeight ? scaleWidth*1.5 : scaleHeight*1.5);
 	// Then render sprite based on dimensions
-	int32_t columnNum;
-	for (int32_t i = startX; i < startX + screenWidth; i++)
+	int32_t texX;
+	int32_t texY;
+	double pixX;
+	double pixY;
+	uint32_t pixColor;
+	// For all pixels in bounding box (yes, I know the box can be more dynamically sized but
+	// I'm lazy and this will have to cut it for now)
+	for (int32_t i = -boundSize/2; i < boundSize/2; i++)
 	{
-		if (i >= 0 && i < buffer->width)
+		for (int32_t j = -boundSize/2; j < boundSize/2; j++)
 		{
-			columnNum = (int32_t)((double)sprite.texture->tileWidth * ((double)(i - startX)/screenWidth));
-			SDL_Color dummyColor = {0,0,0,0};
-			PixBuffer_drawTexColumn(buffer, i, startY, screenHeight, sprite.texture, sprite.frameNum, sprite.alphaNum, columnNum, 0, dummyColor);
+			texX = (int32_t)round((i * cos(angle) - j * sin(angle)) / sprite.scaleFactor + floor(sprite.texture->tileWidth/2.0));
+			texY = (int32_t)round((i * sin(angle) + j * cos(angle)) / sprite.scaleFactor + floor(sprite.texture->tileHeight/2.0));
+			pixX = sprite.x + i;
+			pixY = sprite.y + j;
+			if (pixX >= 0 && pixX < buffer->width && pixY >= 0 && pixY < buffer->height &&\
+				texX >= 0 && texX < sprite.texture->tileWidth && texY >=0 && texY < sprite.texture->tileHeight)
+			{
+				pixColor = PixBuffer_getTex(sprite.texture, 0, texX, texY);
+				PixBuffer_drawPixAlpha(buffer, pixX, pixY, pixColor, sprite.alphaNum);
+			}
 		}
 	}
 }

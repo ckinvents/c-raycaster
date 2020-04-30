@@ -64,19 +64,19 @@ void GameEngine_scaleEntity(Entity* entity, double scaleFactor)
 	entity->sprite.scaleFactor = scaleFactor;
 }
 
-void GameEngine_updatePlayer(Player* player, Map* map, double dt)
+void GameEngine_updatePlayer(Player* player, Map* map, KeyMap* keyMap, double dt)
 {
 	int borderWidth = 2;
-	const uint8_t* keys = SDL_GetKeyboardState(NULL);
+	uint8_t* keys = keyMap->state;
 	// Death test
-	if ((keys[SDL_SCANCODE_K] && player->state))
+	if ((keys[PK_KILL] && player->state))
 	{
 		printf("Player was killed!\n");
 		player->state = 0;
 		player->timer = 0;
 		player->groundH = -0.4;
 	}
-	else if ((keys[SDL_SCANCODE_R] && !player->state))
+	else if ((keys[PK_RESPAWN] && !player->state))
 	{
 		printf("Respawned!\n");
 		player->state = 2;
@@ -99,7 +99,7 @@ void GameEngine_updatePlayer(Player* player, Map* map, double dt)
 
 	// Jump test
 	player->h += player->velH * dt;
-	if (player->state && keys[SDL_SCANCODE_SPACE] && !player->h)
+	if (player->state && keys[PK_JUMP] && !player->h)
 	{
 		player->velH = 2.8;
 	}
@@ -116,7 +116,7 @@ void GameEngine_updatePlayer(Player* player, Map* map, double dt)
 	// Movement code
 	if (player->state)
 	{
-		if (keys[SDL_SCANCODE_LCTRL])
+		if (keys[PK_CROUCH])
 		{
 			player->groundH = -0.15;
 		}
@@ -124,31 +124,32 @@ void GameEngine_updatePlayer(Player* player, Map* map, double dt)
 		{
 			player->groundH = 0;
 		}
-		if ((keys[SDL_SCANCODE_W]||keys[SDL_SCANCODE_S]||keys[SDL_SCANCODE_Q]||keys[SDL_SCANCODE_E])&&!((keys[SDL_SCANCODE_W]&&keys[SDL_SCANCODE_S])||keys[SDL_SCANCODE_Q]&&keys[SDL_SCANCODE_E]))
+		double speedFactor = 1;
+		if (keys[PK_SPRINT])
+		{
+			speedFactor += 1;
+		}
+		if (keys[PK_CROUCH])
+		{
+			speedFactor -= 0.5;
+		}
+		if ((keys[PK_FORWARD]||keys[PK_BACKWARD]||keys[PK_LSTRAFE]||keys[PK_RSTRAFE])&&\
+		!((keys[PK_FORWARD]&&keys[PK_BACKWARD])||(keys[PK_LSTRAFE]&&keys[PK_RSTRAFE])))
 		{
 			double dx = 0;
 			double dy = 0;
-			double speedFactor = 1;
-			if (keys[SDL_SCANCODE_LSHIFT])
-			{
-				speedFactor += 1;
-			}
-			if (keys[SDL_SCANCODE_LCTRL])
-			{
-				speedFactor -= 0.5;
-			}
 			
-			if ((keys[SDL_SCANCODE_W]||keys[SDL_SCANCODE_S])&&!(keys[SDL_SCANCODE_Q]||keys[SDL_SCANCODE_E]))
+			if ((keys[PK_FORWARD]||keys[PK_BACKWARD])&&!(keys[PK_LSTRAFE]||keys[PK_RSTRAFE]))
 			{
 				dx = 2 * dt * cos(player->angle) * speedFactor;
 				dy = 2 * dt * sin(player->angle) * speedFactor;
 			}
-			else if ((keys[SDL_SCANCODE_W]&&keys[SDL_SCANCODE_Q])||(keys[SDL_SCANCODE_S]&&keys[SDL_SCANCODE_E]))
+			else if ((keys[PK_FORWARD]&&keys[PK_LSTRAFE])||(keys[PK_BACKWARD]&&keys[PK_RSTRAFE]))
 			{
 				dx = 2 * dt * cos(player->angle-M_PI/4) * speedFactor;
 				dy = 2 * dt * sin(player->angle-M_PI/4) * speedFactor;
 			}
-			else if ((keys[SDL_SCANCODE_S]&&keys[SDL_SCANCODE_Q])||(keys[SDL_SCANCODE_W]&&keys[SDL_SCANCODE_E]))
+			else if ((keys[PK_BACKWARD]&&keys[PK_LSTRAFE])||(keys[PK_FORWARD]&&keys[PK_RSTRAFE]))
 			{
 				dx = 2 * dt * cos(player->angle+M_PI/4) * speedFactor;
 				dy = 2 * dt * sin(player->angle+M_PI/4) * speedFactor;
@@ -164,7 +165,7 @@ void GameEngine_updatePlayer(Player* player, Map* map, double dt)
 			int newY;
 			double changeX;
 			double changeY;
-			if ((keys[SDL_SCANCODE_W]||(keys[SDL_SCANCODE_E])&&!(keys[SDL_SCANCODE_S])))
+			if ((keys[PK_FORWARD]||(keys[PK_RSTRAFE])&&!(keys[PK_BACKWARD])))
 			{
 				newX = (int)floor(player->x+dx);
 				changeX = dx;
@@ -205,13 +206,13 @@ void GameEngine_updatePlayer(Player* player, Map* map, double dt)
 			if (((newY < 0 || newY >= map->height) || (oldX < 0 || oldX >= map->width)) || map->data[newY*map->width+oldX] == 0)
 				player->y += player->velY;
 		}
-		if (keys[SDL_SCANCODE_A])
+		if (keys[PK_TCC])
 		{
-			player->angle -= dt;
+			player->angle -= speedFactor*dt;
 		}
-		else if (keys[SDL_SCANCODE_D])
+		else if (keys[PK_TC])
 		{
-			player->angle += dt;
+			player->angle += speedFactor*dt;
 		}
 		if (player->angle >= (2 * M_PI))
 		{
@@ -286,6 +287,34 @@ void GameEngine_updateProjectile(ProjectileList* projectiles, uint32_t numProjec
 				projectiles->projectiles[i].y = -1000;
 			}
 			GameEngine_updateEntity(&projectiles->projectiles[i]);
+		}
+	}
+}
+
+void GameEngine_bindKeys(KeyMap* keyMap, uint8_t* keyList)
+{
+	int i = 0;
+	while (keyList[i] != TERMINATE_PK)
+	{
+		keyMap->keys[keyList[i]].primary = keyList[i+1];
+		keyMap->keys[keyList[i]].secondary = keyList[i+2];
+		i += 3;
+	}
+}
+
+void GameEngine_updateKeys(KeyMap* keyMap)
+{
+	const uint8_t* keys = SDL_GetKeyboardState(NULL);
+	for (int i = 0; i < LEN_PK; i++)
+	{
+		if (keyMap->keys[i].primary && \
+			(keys[keyMap->keys[i].primary] || keys[keyMap->keys[i].secondary]))
+		{
+			keyMap->state[i] = 1;
+		}
+		else
+		{
+			keyMap->state[i] = 0;
 		}
 	}
 }

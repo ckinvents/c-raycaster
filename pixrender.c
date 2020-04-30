@@ -495,10 +495,10 @@ void PixBuffer_monochromeFilter(PixBuffer* buffer, SDL_Color targetColor, double
         {
             oldColor = PixBuffer_toSDLColor(PixBuffer_getPix(buffer, x, y));
             targetAvg = (oldColor.r + oldColor.g + oldColor.b) / 3;
-            dr = (targetAvg - oldColor.r) * fadePercent;
-            dg = (targetAvg - oldColor.g) * fadePercent;
-            db = (targetAvg - oldColor.b) * fadePercent;
-            newColor = PixBuffer_toPixColor((uint8_t)(targetR*(oldColor.r + dr)), (uint8_t)(targetG*(oldColor.g + dg)), (uint8_t)(targetB*(oldColor.b + db)), (uint8_t)oldColor.a);
+            dr = (targetAvg * targetR - oldColor.r) * fadePercent;
+            dg = (targetAvg * targetG - oldColor.g) * fadePercent;
+            db = (targetAvg * targetB - oldColor.b) * fadePercent;
+            newColor = PixBuffer_toPixColor((uint8_t)(oldColor.r + dr), (uint8_t)(oldColor.g + dg), (uint8_t)(oldColor.b + db), (uint8_t)oldColor.a);
             PixBuffer_drawPix(buffer, x, y, newColor);
         }
     }
@@ -555,6 +555,11 @@ uint32_t PixBuffer_getPix(PixBuffer* buffer, uint32_t x, uint32_t y)
     return buffer->pixels[x + y * buffer->width];
 }
 
+uint32_t PixBuffer_getTex(RayTex* texture, uint8_t tileNum, uint32_t x, uint32_t y)
+{
+    return texture->pixData[(tileNum*texture->tileHeight + y) * texture->tileWidth + x];
+}
+
 /**
  * @brief Draws a single pixel to the PixBuffer
  * @param buffer PixBuffer to draw to
@@ -590,4 +595,37 @@ void PixBuffer_drawPixAlpha(PixBuffer* buffer, uint32_t x, uint32_t y, uint32_t 
         }
         PixBuffer_drawPix(buffer, x, y, PixBuffer_toPixColor(r,g,b,0xff));
     }
+}
+
+void PixBuffer_drawPixDouble(PixBuffer* buffer, double x, double y, uint32_t color, double alphaNum)
+{
+    uint32_t baseX = (uint32_t)floor(x);
+    uint32_t baseY = (uint32_t)floor(y);
+    double partX = x - baseX;
+    double partY = y - baseY;
+    if (x >= 0 && y >= 0)
+    {
+        PixBuffer_drawPixAlpha(buffer, baseX, baseY, color, alphaNum);
+    }
+    if (partX > 0.5)
+    {
+        baseX++;
+        PixBuffer_drawPixAlpha(buffer, baseX, baseY, color, alphaNum);
+    }
+    else if (partX < -0.5)
+    {
+        baseX--;
+        PixBuffer_drawPixAlpha(buffer, baseX, baseY, color, alphaNum);
+    }
+    if (partY > 0.5)
+    {
+        baseY++;
+        PixBuffer_drawPixAlpha(buffer, baseX, baseY, color, alphaNum);
+    }
+    else if (partY < -0.5)
+    {
+        baseY--;
+        PixBuffer_drawPixAlpha(buffer, baseX, baseY, color, alphaNum);
+    }
+    //PixBuffer_drawPixAlpha(buffer, baseX, baseY, color, alphaNum);
 }
