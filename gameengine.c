@@ -165,7 +165,7 @@ void GameEngine_updatePlayer(Player* player, Map* map, KeyMap* keyMap, double dt
 			int newY;
 			double changeX;
 			double changeY;
-			if ((keys[PK_FORWARD]||(keys[PK_RSTRAFE])&&!(keys[PK_BACKWARD])))
+			if (keys[PK_FORWARD]||(keys[PK_RSTRAFE]&&!keys[PK_BACKWARD]))
 			{
 				newX = (int)floor(player->x+dx);
 				changeX = dx;

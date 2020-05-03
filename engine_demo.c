@@ -417,7 +417,7 @@ int main(int argc, char* argv[])
 
 		////PixBuffer_orderDither(&buffer, gameboyColorPalette, 4, 5);
 		// Note: between 4 & 10 is good for 16 color palette
-		//PixBuffer_orderDither256(buffer->pixelBuffer, 5);
+		PixBuffer_orderDither256(buffer->pixelBuffer, 5);
 		SDL_UpdateTexture(drawTex, NULL, buffer->pixelBuffer->pixels, sizeof(uint32_t) * WIDTH);
 		SDL_RenderCopy(renderer, drawTex, NULL, NULL);
 		SDL_RenderPresent(renderer);

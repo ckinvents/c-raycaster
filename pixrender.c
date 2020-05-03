@@ -61,7 +61,7 @@ void PixBuffer_drawColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h, S
     {
         h = buffer->height - y;
     }
-    #pragma omp parallel for schedule(dynamic,1)
+    ////#pragma omp parallel for schedule(dynamic,1)
     for (int32_t i = y; i < y + h; i++)
     {
         PixBuffer_drawPix(buffer, x, i, PixBuffer_toPixColor(color.r,color.g,color.b,color.a));
@@ -359,8 +359,6 @@ uint32_t to8BitColor(uint32_t colorDat)
     int r = (int)(colorDat >> 3*8);
     int g = (int)((colorDat >> 2*8) & 0xFF);
     int b = (int)((colorDat >> 8) & 0xFF);
-    double divFact = 255.0/7;
-    int colNum = 0;
     int newR = (int)ceil(round((double)r / 255.0*15) * (255.0/15));
     int newG = (int)ceil(round((double)g / 255.0*15) * (255.0/15));
     int newB = (int)ceil(round((double)b / 255.0*15) * (255.0/15));

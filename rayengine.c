@@ -44,7 +44,6 @@ DepthBuffer* RayEngine_initDepthBuffer(uint32_t width, uint32_t height)
 double RayEngine_getDepth(DepthBuffer* buffer, uint32_t x, uint32_t y, uint8_t layer)
 {
 	uint32_t width = buffer->pixelBuffer->width;
-	uint32_t height = buffer->pixelBuffer->height;
 	return layer ? buffer->alphaDepth[width * y + x] : buffer->pixelDepth[width * y + x];
 }
 
@@ -60,7 +59,6 @@ double RayEngine_getDepth(DepthBuffer* buffer, uint32_t x, uint32_t y, uint8_t l
 void RayEngine_setDepth(DepthBuffer* buffer, uint32_t x, uint32_t y, uint8_t layer, double depth)
 {
 	uint32_t width = buffer->pixelBuffer->width;
-	uint32_t height = buffer->pixelBuffer->height;
 	if (layer)
 	{
 		buffer->alphaDepth[width * y + x] = depth;
@@ -305,8 +303,8 @@ void RayEngine_draw2DSprite(PixBuffer* buffer, RaySprite sprite, double angle)
 	{
 		for (int32_t j = -boundSize/2; j < boundSize/2; j++)
 		{
-			texX = (int32_t)round((i * cos(angle) - j * sin(angle)) / sprite.scaleFactor + floor(sprite.texture->tileWidth/2.0));
-			texY = (int32_t)round((i * sin(angle) + j * cos(angle)) / sprite.scaleFactor + floor(sprite.texture->tileHeight/2.0));
+			texX = (int32_t)round((i * cos(angle) - j * sin(angle)) / sprite.scaleFactor + sprite.texture->tileWidth/2.0 - 0.5);
+			texY = (int32_t)round((i * sin(angle) + j * cos(angle)) / sprite.scaleFactor + sprite.texture->tileHeight/2.0 - 0.5);
 			pixX = sprite.x + i;
 			pixY = sprite.y + j;
 			if (pixX >= 0 && pixX < buffer->width && pixY >= 0 && pixY < buffer->height &&\
@@ -361,11 +359,6 @@ void RayEngine_drawMinimap(PixBuffer* buffer, Camera* camera, unsigned int width
 			}
 		}
 	}
-	// Draws view fulcrum
-	//SDL_RenderDrawLine(renderer, camera->x * blockSize + mapRect.x, camera->y * blockSize + mapRect.y, (camera->x + camera->dist * cos(camera->angle - camera->fov / 2)) * blockSize + mapRect.x, (camera->y + camera->dist * sin(camera->angle - camera->fov / 2)) * blockSize + mapRect.y);
-	//SDL_RenderDrawLine(renderer, camera->x * blockSize + mapRect.x, camera->y * blockSize + mapRect.y, (camera->x + camera->dist * cos(camera->angle + camera->fov / 2)) * blockSize + mapRect.x, (camera->y + camera->dist * sin(camera->angle + camera->fov / 2)) * blockSize + mapRect.y);
-	SDL_Color cameraCol = {0xFF, 0xFF, 0xFF, 0xFF};
-	//PixBuffer_drawPix(buffer, camera->x * blockSize + mapRect.x, camera->y * blockSize + mapRect.y, cameraCol);
 }
 
 //! Old
@@ -428,9 +421,6 @@ void RayEngine_generateAngleValues(uint32_t width, Camera* camera)
  */
 void RayEngine_draw3DSprite(DepthBuffer* buffer, Camera* camera, uint32_t width, uint32_t height, double resolution, RaySprite sprite)
 {
-	// Establish starting angle and sweep per column
-	double startAngle = camera->angle - camera->fov / 2.0;
-	//double adjFactor = width / (2 * tan(camera->fov / 2));
 	double scaleFactor = (double)width / (double)height * 2.4;
 	// Generate screenspace angle mapping constant
 	const double angleMapConstant = (double)(width) / (2*tan(camera->fov/2));
