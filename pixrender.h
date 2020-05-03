@@ -20,6 +20,8 @@ typedef struct _RayTex {
 	uint8_t tileCount;
 } RayTex;
 
+PixBuffer* PixBuffer_initPixBuffer(uint32_t width, uint32_t height);
+void PixBuffer_delPixBuffer(PixBuffer* buffer);
 void PixBuffer_drawColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h, SDL_Color color);
 void PixBuffer_drawTexColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h, RayTex* texture, uint8_t tileNum, double alphaNum, uint32_t column, double fadePercent, SDL_Color targetColor);
 void PixBuffer_drawRect(PixBuffer* buffer, SDL_Rect* rect, SDL_Color color);
@@ -34,6 +36,7 @@ void PixBuffer_monochromeFilter(PixBuffer* buffer, SDL_Color targetColor, double
 void PixBuffer_inverseFilter(PixBuffer* buffer);
 uint32_t PixBuffer_toPixColor(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 SDL_Color PixBuffer_toSDLColor(uint32_t pixColor);
+uint32_t PixBuffer_blendAlpha(uint32_t baseColor, uint32_t addColor, double alphaNum);
 uint32_t PixBuffer_getPix(PixBuffer* buffer, uint32_t x, uint32_t y);
 uint32_t PixBuffer_getTex(RayTex* texture, uint8_t tileNum, uint32_t x, uint32_t y);
 void PixBuffer_drawPix(PixBuffer* buffer, uint32_t x, uint32_t y, uint32_t color);

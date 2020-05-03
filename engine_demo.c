@@ -174,11 +174,6 @@ int main(int argc, char* argv[])
 	//Demo map
 	Map testMap;
 	RayEngine_generateMap(&testMap, testMapChar, MAP_WIDTH, MAP_HEIGHT, 2, colorKey, 4);
-	uint32_t mapPixels[WIDTH*HEIGHT];
-	PixBuffer mapBuffer;
-	mapBuffer.pixels = mapPixels;
-	mapBuffer.width = WIDTH;
-	mapBuffer.height = HEIGHT;
 
 	// Demo texture
 	RayTex boxTex;
@@ -257,33 +252,25 @@ int main(int argc, char* argv[])
 	}
 	GameEngine_initEntity(&entityList[9], 7.5, 10.5, -0.375, 0, &spriteTexs[8], &shadowTex); // Test ball -0.375
 	GameEngine_scaleEntity(&entityList[9], 0.25); //0.25
-	entityList[9].sprite.alphaNum = 1;
+	entityList[9].sprite.alphaNum = 0.7;
 	GameEngine_moveEntity(&entityList[0], 2.5, 7.5, 0); // Big Thonk
 
 	// Test cursor sprite
 	RaySprite cursorSprite;
 	RayEngine_initSprite(&cursorSprite, &spriteTexs[9], 1, 0.3, WIDTH/2, HEIGHT/2, 0);
 
-	// Allocate depth buffer 
-	RayBuffer rayBuffer[WIDTH];
-	for (int i = 0; i < WIDTH; i++)
-	{
-		rayBuffer[i].numLayers = 0;
-	}
-
 	// SDL renderer initialization
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 	SDL_RenderSetScale(renderer, SCALE, SCALE);
 	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
-	// Pixbuffer initialization
+	// Render target initialization
 	drawTex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, WIDTH, HEIGHT);
 	SDL_SetTextureBlendMode(drawTex, SDL_BLENDMODE_BLEND);
+
+	// Depth buffer initialization
 	uint32_t pixels[WIDTH * HEIGHT];
-	PixBuffer buffer;
-	buffer.pixels = pixels;
-	buffer.width = WIDTH;
-	buffer.height = HEIGHT;
+	DepthBuffer* buffer = RayEngine_initDepthBuffer(WIDTH, HEIGHT);
 	SDL_Rect screenRect = {0,0,WIDTH,HEIGHT};
 
 	SDL_Color nightSky = {20,0,20,255};
@@ -293,7 +280,7 @@ int main(int argc, char* argv[])
 	SDL_Color white = {0xff,0xff,0xff,0xff};
 
 	// Generate background texture
-	uint32_t texPixels[WIDTH * HEIGHT];
+	uint32_t* texPixels = (uint32_t*)calloc(sizeof(uint32_t), WIDTH * HEIGHT);
 	PixBuffer background;
 	background.pixels = texPixels;
 	background.width = WIDTH;
@@ -386,12 +373,13 @@ int main(int argc, char* argv[])
 		SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
 		SDL_RenderClear(renderer);
 		SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-		PixBuffer_clearBuffer(&buffer);
 
-		//PixBuffer_drawBuffOffset(&buffer, &background, WIDTH, HEIGHT, testPlayer.angle*scrollConst);
-		memcpy(buffer.pixels, background.pixels, sizeof(uint32_t)*WIDTH*HEIGHT);
-		//RayEngine_raycastRender(&buffer, testPlayer, WIDTH, HEIGHT, &testMap, 0.01);
-		RayEngine_raycastCompute(rayBuffer, &(testPlayer.camera), WIDTH, HEIGHT, &testMap, 0.01, &worldTex);
+		////PixBuffer_drawBuffOffset(&buffer, &background, WIDTH, HEIGHT, testPlayer.angle*scrollConst);
+		RayEngine_resetDepthBuffer(buffer);
+		memcpy(buffer->pixelBuffer->pixels, background.pixels, sizeof(uint32_t)*WIDTH*HEIGHT);
+		RayEngine_texRenderFloor(buffer->pixelBuffer, &testPlayer.camera, WIDTH, HEIGHT, NULL, 0, &worldTex, 6);
+		RayEngine_raycastRender(buffer, &(testPlayer.camera), WIDTH, HEIGHT, &testMap, 0.01, &worldTex);
+		////RayEngine_raycastCompute(rayBuffer, &(testPlayer.camera), WIDTH, HEIGHT, &testMap, 0.01, &worldTex);
 		// Update & draw sprites
 		for (uint8_t s = 0; s < numEntities; s++)
 		{
@@ -399,40 +387,38 @@ int main(int argc, char* argv[])
 			{
 				GameEngine_updateEntity(&entityList[s]);
 			}
-			RayEngine_raySpriteCompute(rayBuffer, &(testPlayer.camera), WIDTH, HEIGHT, 0.01, entityList[s].sprite);
-			RayEngine_raySpriteCompute(rayBuffer, &(testPlayer.camera), WIDTH, HEIGHT, 0.01, entityList[s].shadow);
+			RayEngine_draw3DSprite(buffer, &(testPlayer.camera), WIDTH, HEIGHT, 0.01, entityList[s].sprite);
+			RayEngine_draw3DSprite(buffer, &(testPlayer.camera), WIDTH, HEIGHT, 0.01, entityList[s].shadow);
 		}
-
-		RayEngine_texRenderFloor(&buffer, &testPlayer.camera, WIDTH, HEIGHT, NULL, 0, &worldTex, 6);
-		//RayEngine_texRenderCeiling(&buffer, &testPlayer.camera, WIDTH, HEIGHT, NULL, &worldTex, 7);
-		RayEngine_texRaycastRender(&buffer, WIDTH, HEIGHT, rayBuffer, testPlayer.camera.dist);
+		RayEngine_renderBuffer(buffer);
+		////RayEngine_texRenderCeiling(&buffer, &testPlayer.camera, WIDTH, HEIGHT, NULL, &worldTex, 7);
 		// Player death animation
 		if (!testPlayer.state && testPlayer.timer < 2)
 		{
-			PixBuffer_fillBuffer(&buffer, PixBuffer_toPixColor(150, 0, 20, 255), 1-(testPlayer.timer/2));
+			PixBuffer_fillBuffer(buffer->pixelBuffer, PixBuffer_toPixColor(150, 0, 20, 255), 1-(testPlayer.timer/2));
 		}
 		else if (testPlayer.state == 2)
 		{
 			GameEngine_initPlayer(&testPlayer, 1.5, 1.5, 0, M_PI/2, depth, WIDTH);
 		}
-		RayEngine_draw2DSprite(&buffer, cursorSprite, 2*runTimeF);
-		//PixBuffer_fillBuffer(&buffer, PixBuffer_toPixColor(50, 50, 50, 255), 0.2);
+		RayEngine_draw2DSprite(buffer->pixelBuffer, cursorSprite, 2*runTimeF);
+		////PixBuffer_fillBuffer(&buffer, PixBuffer_toPixColor(50, 50, 50, 255), 0.2);
 
-		//PixBuffer_fillBuffer(&buffer, PixBuffer_toPixColor(150,0,20,255), 1);
-		//PixBuffer_monochromeFilter(&buffer, white, toggleSaturation);
+		////PixBuffer_fillBuffer(&buffer, PixBuffer_toPixColor(150,0,20,255), 1);
+		////PixBuffer_monochromeFilter(&buffer, white, toggleSaturation);
 		SDL_Color sepiaPink = {221,153,153,255};
-		//PixBuffer_monochromeFilter(&buffer, sepiaPink, 1);
-		//PixBuffer_monochromeFilter(&buffer, white, 4.442);
+		////PixBuffer_monochromeFilter(&buffer, sepiaPink, 1);
+		////PixBuffer_monochromeFilter(&buffer, white, 4.442);
 		if (paused)
 		{
 			SDL_Color monoGrey = {233,214,255,255};//{153, 140, 168, 255};
-			PixBuffer_monochromeFilter(&buffer, sepiaPink, 1);
+			PixBuffer_monochromeFilter(buffer->pixelBuffer, sepiaPink, 1);
 		}
 
-		//PixBuffer_orderDither(&buffer, gameboyColorPalette, 4, 5);
+		////PixBuffer_orderDither(&buffer, gameboyColorPalette, 4, 5);
 		// Note: between 4 & 10 is good for 16 color palette
-		PixBuffer_orderDither256(&buffer, 5);
-		SDL_UpdateTexture(drawTex, NULL, buffer.pixels, sizeof(uint32_t) * WIDTH);
+		//PixBuffer_orderDither256(buffer->pixelBuffer, 5);
+		SDL_UpdateTexture(drawTex, NULL, buffer->pixelBuffer->pixels, sizeof(uint32_t) * WIDTH);
 		SDL_RenderCopy(renderer, drawTex, NULL, NULL);
 		SDL_RenderPresent(renderer);
 		dt = 0.001 * (double)(SDL_GetTicks() - realRunTime);
@@ -445,6 +431,8 @@ int main(int argc, char* argv[])
 
 
 	// Clean up and quit
+	RayEngine_delDepthBuffer(buffer);
+	free(background.pixels);
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
 	renderer = NULL;

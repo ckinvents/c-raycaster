@@ -8,7 +8,7 @@ linux:
 	-lm -lSDL2 -lSDL2main -O3 -o build/linux/engine_demo
 
 linux-debug:
-	gcc pixrender.c rayengine.c gameengine.c engine_demo.c \
+	gcc -Wall pixrender.c rayengine.c gameengine.c engine_demo.c \
 	-lm -lSDL2 -lSDL2main -g -o debug/linux/engine_demo
 
 windows:

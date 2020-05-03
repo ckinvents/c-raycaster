@@ -1,4 +1,22 @@
 # Changes
+## 03/05/2020
+- engine_demo
+    - Removed unused map code
+    - Made render buffers dynamic
+    - Incorporated new depth buffer/rendering routines
+- Makefile
+    - Added warnings
+- pixrender
+    - Added PixBuffer init functions
+    - Improved comments (still WIP)
+    - Moved texColumn to rayengine
+    - Added blendAlpha routine
+    - Updated drawPix
+- rayengine
+    - Replaced 1D RayBuffer with 2D DepthBuffer
+    - Improved comments
+    - Removed raybuffer code
+    - Partially fixed jagged texture issue
 ## 30/04/2020
 - engine_demo
     - Added keymap
@@ -13,7 +31,6 @@
     - Added rounded pixel code
 - rayengine
     - Improved 2D sprite drawing, added rotation
-    
 ## 11/04/2020
 - engine_demo
     - Tweaked colors (again)

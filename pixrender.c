@@ -12,18 +12,35 @@
 
 uint32_t getColor(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
-// Precomputed 4x4 bayer matrix
-// to be used for ordered dithering
-// based on 4 patterns
-// (see PixBuffer_orderedDither)
-double ditherMatrix[16] = {
+/**
+ * Precomputed 4x4 bayer matrix
+ * to be used for ordered dithering
+ * based on 4 patterns
+ * (see PixBuffer_orderedDither)
+ */
+const double ditherMatrix[16] = {
     -0.875, 0.125, -0.625, 0.375,
     0.625, -0.375, 0.875, -0.125,
     -0.5, 0.5, -0.75, 0.25,
     1.0, 0.0, 0.75, -0.25
 };
 
-/**
+PixBuffer* PixBuffer_initPixBuffer(uint32_t width, uint32_t height)
+{
+    PixBuffer* newBuffer = (PixBuffer*)malloc(sizeof(PixBuffer));
+    newBuffer->pixels = (uint32_t*)malloc(sizeof(uint32_t)*width*height);
+    newBuffer->width = width;
+    newBuffer->height = height;
+    return newBuffer;
+}
+
+void PixBuffer_delPixBuffer(PixBuffer* buffer)
+{
+    free(buffer->pixels);
+    free(buffer);
+}
+
+/** PixBuffer_drawColumn
  * @brief Draws a column to a pixel buffer
  * Note: drawColumn <b>does not</b> check x bound
  * Ensure that your draw functions choose
@@ -51,60 +68,7 @@ void PixBuffer_drawColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h, S
     }
 }
 
-void PixBuffer_drawTexColumn(PixBuffer* buffer, uint32_t x, int32_t y, int32_t h, RayTex* texture, uint8_t tileNum, double alphaNum, uint32_t column, double fadePercent, SDL_Color targetColor)
-{
-    if (y + h < 0 || fadePercent > 1.0)
-    {
-        return;  // Sorry, messy fix but it works
-    }
-    int32_t offH = h;
-    int32_t offY = 0;
-    if (y < 0)
-    {
-        offY = -y;
-        h = h + y;
-        y = 0;
-    }
-    if (y + h > buffer->height)
-    {
-        h = buffer->height - y;
-    }
-    //#pragma omp parallel for schedule(dynamic,1)
-    for (int32_t i = 0; i < h; i++)
-    {
-        // Calculate pixel to draw from texture
-        uint32_t pix = texture->pixData[tileNum*texture->tileWidth*texture->tileHeight + (uint32_t)floor(((double)(offY + i)/(double)offH)*(texture->tileHeight)) * texture->tileWidth + column];
-        int r = (int)(pix >> 3*8);
-        int g = (int)((pix >> 2*8) & 0xFF);
-        int b = (int)((pix >> 8) & 0xFF);
-        int a = (int)(pix & 0xFF);
-        if (a)
-        {
-            int dr = targetColor.r - r;
-            int dg = targetColor.g - g;
-            int db = targetColor.b - b;
-            int da = targetColor.a - a;
-            r += (int)((double)dr * fadePercent);
-            g += (int)((double)dg * fadePercent);
-            b += (int)((double)db * fadePercent);
-            a += (int)((double)da * fadePercent);
-            if (alphaNum*a != 0 && alphaNum*a != 255) // Alpha transparency, compute alpha based on array colors
-            {
-                double alpha = ((double)a)/255.0 * (alphaNum);
-                uint32_t oldPix = buffer->pixels[(i+y)*buffer->width+x];
-                int oldR = (int)(oldPix >> 3*8);
-                int oldG = (int)((oldPix >> 2*8) & 0xFF);
-                int oldB = (int)((oldPix >> 8) & 0xFF);
-                r = (int)((double)r * alpha + (double)oldR * (1-alpha));
-                g = (int)((double)g * alpha + (double)oldG * (1-alpha));
-                b = (int)((double)b * alpha + (double)oldB * (1-alpha));
-            }
-            PixBuffer_drawPix(buffer, x, i+y, PixBuffer_toPixColor(r,g,b,0xff));
-        }
-    }
-}
-
-/**
+/** PixBuffer_drawRow
  * @brief Draws a row to a pixel buffer
  * Note: drawRow <b>does not</b> check x <b>or</b>
  * y bounds. Be careful to ensure x, w, and y
@@ -137,12 +101,9 @@ void PixBuffer_drawRow(PixBuffer* buffer, uint32_t x, uint32_t y, uint32_t w, SD
     }
 }
 
-/**
+/** PixBuffer_drawRect
  * @brief Draws a filled rectangle to a pixel buffer
- * Note: drawRect does check bounds, but for
- * the sake of speed it is recommended
- * that rectangles are constrained to
- * buffer size to avoid wasted cycles
+ *
  * @param buffer PixBuffer struct to write to
  * @param rect SDL_Rect struct with coordinate and dimension data
  **/
@@ -239,11 +200,11 @@ void PixBuffer_drawBuffOffset(PixBuffer* target, PixBuffer* source, uint32_t x, 
     }
 }
 
-/**
+/** PixBuffer_clearBuffer
  * @brief Clears buffer array to 0x00
- * Useful if you need to quickly reuse a buffer
- * for drawing layers/graphics updates. Sets to
- * transparent black using memset
+ * * Useful if you need to quickly reuse a buffer
+ * * for drawing layers/graphics updates. Sets to
+ * * transparent black using memset
  * @param buffer PixBuffer struct to clear
  **/
 void PixBuffer_clearBuffer(PixBuffer* buffer)
@@ -251,15 +212,11 @@ void PixBuffer_clearBuffer(PixBuffer* buffer)
     memset(buffer->pixels, 0, buffer->width * buffer->height * 4);
 }
 
-/**
+/** PixBuffer_paletteFilter
  * @brief Remaps RGB buffer colors to a given pallette
- * This filter uses RGB color distance to match every pixel
- * color to the closest color in the palette array. Each pixel
- * is then updated with this new color, effectively palettizing
- * the buffer.
- * Note: it is important to ensure paletteNum is no longer than
- * the palette list, otherwise your this will index nonexistant colors
- * and make your output look really funky. And possibly segfault I guess
+ * * Note: it is important to ensure paletteNum is no longer than
+ * * the palette list, otherwise your this will index nonexistant colors
+ * * and make your output look really funky. And possibly segfault I guess
  * @param buffer PixBuffer to palettize
  * @param palette SDL_Color array to quantitize to
  * @param paletteNum length of color palette
@@ -294,8 +251,9 @@ void PixBuffer_paletteFilter(PixBuffer* buffer, SDL_Color* palette, int paletteN
     }
 }
 
-/**
+/** getNearestColor
  * @brief Internal function called by orderedDither for quantitization
+ * 
  * @param palette SDL_Color array to quantitize to
  * @param paletteNum length of color palette
  * @param colorDat buffer format color to quantititize
@@ -321,26 +279,12 @@ uint32_t getNearestColor(SDL_Color* palette, int paletteNum, uint32_t colorDat)
 }
 
 /**
- * @brief Applies an ordered dither effect to a buffer
+ * PixBuffer_orderDither
  * The algorithm for this is somewhat based on the pseudocode
  * from the wikipedia page, but adapted once I found out
  * how this works
- * Each pixel color in the buffer is added to a corresponding
- * matrix value (which repeats across the buffer dimension)
- * The weights are arranged based on the pattern of dithering
- * (which pixels should be lightened or darkened first based on
- * change in brightness) with 16 possible levels (for a 4x4 as
- * provided). The scaleFactor represents the magnitude to which
- * the weight shall brighten or darken the color for pallette
- * assignment, which shall increase the dither color range while
- * also compromising on color accuracy (since the palletes given
- * are not dispersed, this should be adjusted to taste). The brightened
- * or darkened color (again, magnitude of the weight determining which
- * pixels shall change the most and, thus, for a solid color region, which
- * pixels shall change first) is then processed by the getNearestColor
- * function which will then assign the pixel to a color brighter, darker
- * or equal to the otherwise undithered quantitization based on the
- * weight values.
+ * @brief Applies an ordered dither effect to a buffer
+ *
  * @param buffer PixBuffer to dither
  * @param palette SDL_Color array to quantitize to
  * @param paletteNum length of color palette
@@ -404,6 +348,12 @@ void PixBuffer_orderDither(PixBuffer* buffer, SDL_Color* palette, int paletteNum
     }
 }
 
+/** to8BitColor
+ * @brief Paletizes 32bit color to 8bit color
+ * 
+ * @param colorDat Raw truecolor value to paletize
+ * @return 8 bit color value
+ */
 uint32_t to8BitColor(uint32_t colorDat)
 {
     int r = (int)(colorDat >> 3*8);
@@ -417,6 +367,15 @@ uint32_t to8BitColor(uint32_t colorDat)
     return (uint32_t)(newR) << 3*8 | (uint32_t)(newG) << 2*8 | (uint32_t)newB << 8 | (uint32_t)0xFF;
 }
 
+/** PixBuffer_orderDither256
+ * Uses matrix dithering to palletize truecolor buffer to
+ * 8-bit 256 color pallette
+ * @brief Applies 256 color dithering filter to buffer
+ * 
+ * @param buffer PixBuffer to apply filter to
+ * @param scaleFactor Stength of dithering. Multiplies values in 
+ *        matrix to increase extremety of offsets
+ **/
 void PixBuffer_orderDither256(PixBuffer* buffer, double scaleFactor)
 {
     // Components to decode RGBA format
@@ -475,6 +434,13 @@ void PixBuffer_orderDither256(PixBuffer* buffer, double scaleFactor)
     }
 }
 
+/** PixBuffer_monochromeFilter
+ * * Note: Does not check fade percentage, could overflow color values
+ * @brief Monochrome filter with selectable target color and saturation
+ * @param buffer PixBuffer to apply filter to
+ * @param targetColor Color to adjust chrominance towards
+ * @param fadePercent Degree of monochromatic-ness (inverse saturation)
+ **/
 void PixBuffer_monochromeFilter(PixBuffer* buffer, SDL_Color targetColor, double fadePercent)
 {
     SDL_Color oldColor;
@@ -504,6 +470,10 @@ void PixBuffer_monochromeFilter(PixBuffer* buffer, SDL_Color targetColor, double
     }
 }
 
+/** PixBuffer_inverseFilter
+ * @brief Inverts the RGB channels of all pixels in a PixBuffer
+ * @param buffer PixBuffer to swap channels of
+ **/
 void PixBuffer_inverseFilter(PixBuffer* buffer)
 {
     SDL_Color oldColor;
@@ -527,9 +497,8 @@ void PixBuffer_inverseFilter(PixBuffer* buffer)
     }
 }
 
-/**
+/** PixBuffer_toPixColor
  * @brief Returns color formatted to RGBA format
- * @param buffer PixBuffer to set color for
  * @param r SDL_Color red component
  * @param g SDL_Color green component
  * @param b SDL_Color blue component
@@ -550,6 +519,41 @@ SDL_Color PixBuffer_toSDLColor(uint32_t pixColor)
     return newColor;
 }
 
+uint32_t PixBuffer_blendAlpha(uint32_t baseColor, uint32_t addColor, double alphaNum)
+{
+    SDL_Color newSDLColor;
+    uint32_t newColor;
+    int addR = (int)(addColor >> 3*8);
+    int addG = (int)((addColor >> 2*8) & 0xFF);
+    int addB = (int)((addColor >> 8) & 0xFF);
+    int addA = (int)(addColor & 0xFF);
+    if (alphaNum*addA != 0 && alphaNum*addA != 255) // Alpha transparency, compute alpha based on array colors
+    {
+        double alpha = ((double)addA)/255.0 * (alphaNum);
+        int oldR = (int)(baseColor >> 3*8);
+        int oldG = (int)((baseColor >> 2*8) & 0xFF);
+        int oldB = (int)((baseColor >> 8) & 0xFF);
+        int oldA = (int)(baseColor & 0xFF);
+        newSDLColor.r = (int)((double)addR * alpha + (double)oldR * (1-alpha));
+        newSDLColor.g = (int)((double)addG * alpha + (double)oldG * (1-alpha));
+        newSDLColor.b = (int)((double)addB * alpha + (double)oldB * (1-alpha));
+        if (oldA == 255)
+        {
+            newSDLColor.a = 255;
+        }
+        else
+        {
+            newSDLColor.a = (int)((double)addA * alpha + (double)oldA * (1-alpha));
+        }
+        newColor = PixBuffer_toPixColor(newSDLColor.r, newSDLColor.g, newSDLColor.b, newSDLColor.a);
+    }
+    else
+    {
+        newColor = baseColor;
+    }
+    return newColor;
+}
+
 uint32_t PixBuffer_getPix(PixBuffer* buffer, uint32_t x, uint32_t y)
 {
     return buffer->pixels[x + y * buffer->width];
@@ -560,7 +564,7 @@ uint32_t PixBuffer_getTex(RayTex* texture, uint8_t tileNum, uint32_t x, uint32_t
     return texture->pixData[(tileNum*texture->tileHeight + y) * texture->tileWidth + x];
 }
 
-/**
+/** PixBuffer_drawPix
  * @brief Draws a single pixel to the PixBuffer
  * @param buffer PixBuffer to draw to
  * @param x x coordinate of pixel
@@ -589,11 +593,13 @@ void PixBuffer_drawPixAlpha(PixBuffer* buffer, uint32_t x, uint32_t y, uint32_t 
             int oldR = (int)(oldPix >> 3*8);
             int oldG = (int)((oldPix >> 2*8) & 0xFF);
             int oldB = (int)((oldPix >> 8) & 0xFF);
+            int oldA = (int)(oldPix & 0xFF);
             r = (int)((double)r * alpha + (double)oldR * (1-alpha));
             g = (int)((double)g * alpha + (double)oldG * (1-alpha));
             b = (int)((double)b * alpha + (double)oldB * (1-alpha));
+            a = (int)((double)a * alpha + (double)oldA * (1-alpha));
         }
-        PixBuffer_drawPix(buffer, x, y, PixBuffer_toPixColor(r,g,b,0xff));
+        PixBuffer_drawPix(buffer, x, y, PixBuffer_toPixColor(r,g,b,a));
     }
 }
 

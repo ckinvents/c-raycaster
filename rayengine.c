@@ -8,16 +8,243 @@
  * @date 11/1/2019
  **/
 
-#include <math.h>
-#include <omp.h>
 #include "rayengine.h"
-#include <stdio.h>
 
-#define FOG_COLOR {50,20,50,255};//{50,50,80,255}//{77,150,154,255}
+const static SDL_Color FOG_COLOR = {50,20,50,255};//{50,50,80,255}//{77,150,154,255}
 
 const uint8_t* keys;
 double getInterDist(double dx, double dy, double xi, double yi, double coordX, double coordY, double* newX, double* newY, uint8_t* side);
 
+/** RayEngine_initDepthBuffer
+ * @brief Initializes a new RayEngine depth buffer
+ * 
+ * @param buffer DepthBuffer pointer for new buffer
+ * @param width x dimension of buffer in pixels
+ * @param height y dimension of the buffer in pixels
+ */
+DepthBuffer* RayEngine_initDepthBuffer(uint32_t width, uint32_t height)
+{
+	DepthBuffer* newBuffer = (DepthBuffer*)malloc(sizeof(DepthBuffer));
+	newBuffer->pixelBuffer = PixBuffer_initPixBuffer(width, height);
+	newBuffer->alphaBuffer = PixBuffer_initPixBuffer(width, height);
+	newBuffer->pixelDepth = (double*)malloc(sizeof(double) * width * height);
+	newBuffer->alphaDepth = (double*)malloc(sizeof(double) * width * height);
+	return newBuffer;
+}
+
+/** RayEngine_getDepth
+ * @brief Retrieves the depth of a pixel in a DepthBuffer
+ * 
+ * @param buffer Buffer to retrieve depth from
+ * @param x x coordinate of pixel
+ * @param y y coordinate of pixel
+ * @param layer BufferLayer to select alpha or opaque buffer layer
+ * @return double Depth of pixel
+ */
+double RayEngine_getDepth(DepthBuffer* buffer, uint32_t x, uint32_t y, uint8_t layer)
+{
+	uint32_t width = buffer->pixelBuffer->width;
+	uint32_t height = buffer->pixelBuffer->height;
+	return layer ? buffer->alphaDepth[width * y + x] : buffer->pixelDepth[width * y + x];
+}
+
+/** RayEngine_setDepth
+ * @brief Sets the depth of a pixel in a DepthBuffer
+ * 
+ * @param buffer Buffer to set depth in
+ * @param x x coordinate of pixel
+ * @param y y coordinate of pixel
+ * @param layer BufferLayer to select alpha or opaque buffer layer
+ * @param depth Depth of pixel
+ */
+void RayEngine_setDepth(DepthBuffer* buffer, uint32_t x, uint32_t y, uint8_t layer, double depth)
+{
+	uint32_t width = buffer->pixelBuffer->width;
+	uint32_t height = buffer->pixelBuffer->height;
+	if (layer)
+	{
+		buffer->alphaDepth[width * y + x] = depth;
+	}
+	else
+	{
+		buffer->pixelDepth[width * y + x] = depth;
+	}
+	
+}
+
+/** RayEngine_drawPix
+ * @brief 
+ * 
+ * @param buffer 
+ * @param x 
+ * @param y 
+ * @param color 
+ * @param alphaNum 
+ * @param depth 
+ */
+void RayEngine_drawPix(DepthBuffer* buffer, uint32_t x, uint32_t y, uint32_t color, double alphaNum, double depth)
+{
+	if (x >= 0 && x < buffer->pixelBuffer->width && y >= 0 && y < buffer->pixelBuffer->height)
+	{
+		// Keep pixel in alpha layer
+		if (alphaNum < 1 || (color & 0xff) < 255)
+		{
+			// If new alpha in front
+			double pixDepth = RayEngine_getDepth(buffer, x, y, BL_ALPHA);
+			if (pixDepth > depth)
+			{
+				RayEngine_setDepth(buffer, x, y, BL_ALPHA, depth);
+				if (pixDepth == INFINITY)
+				{
+					SDL_Color alphaColor = PixBuffer_toSDLColor(color);
+					alphaColor.a *= alphaNum;
+					PixBuffer_drawPix(buffer->alphaBuffer, x, y, PixBuffer_toPixColor(alphaColor.r, alphaColor.g, alphaColor.b, alphaColor.a));
+				}
+				else
+				{
+					PixBuffer_drawPixAlpha(buffer->alphaBuffer, x, y, color, alphaNum);
+				}
+			}
+			else
+			{
+				PixBuffer_drawPix(buffer->alphaBuffer, x, y, PixBuffer_blendAlpha(color, PixBuffer_getPix(buffer->alphaBuffer, x, y), 1));
+			}
+		}
+		// For opaque layer
+		else
+		{
+			// If new pixel in front
+			if (RayEngine_getDepth(buffer, x, y, BL_BASE) > depth)
+			{
+				RayEngine_setDepth(buffer, x, y, BL_BASE, depth);
+				PixBuffer_drawPix(buffer->pixelBuffer, x, y, color);
+			}
+		}
+	}
+}
+
+uint32_t RayEngine_pixGradientShader(uint32_t pixel, double percent, SDL_Color target)
+{
+	int r = (int)(pixel >> 3*8);
+	int g = (int)((pixel >> 2*8) & 0xFF);
+	int b = (int)((pixel >> 8) & 0xFF);
+	int a = (int)(pixel & 0xFF);
+	int dr = target.r - r;
+	int dg = target.g - g;
+	int db = target.b - b;
+	int da = target.a - a;
+	r += (int)((double)dr * percent);
+	g += (int)((double)dg * percent);
+	b += (int)((double)db * percent);
+	a += (int)((double)da * percent);
+	return PixBuffer_toPixColor(r,g,b,a);
+}
+
+void RayEngine_drawTexColumn(DepthBuffer* buffer, uint32_t x, int32_t y,
+ 							 int32_t h, double depth, RayTex* texture,
+							 uint8_t tileNum, double alphaNum, 
+							 uint32_t column, double fadePercent, 
+							 SDL_Color targetColor)
+{
+    if (y + h < 0 || fadePercent > 1.0)
+    {
+        return;  // Sorry, messy fix but it works
+    }
+    int32_t offH = h;
+    int32_t offY = 0;
+    if (y < 0)
+    {
+        offY = -y;
+        h = h + y;
+        y = 0;
+    }
+    if (y + h > buffer->pixelBuffer->height)
+    {
+        h = buffer->pixelBuffer->height - y;
+    }
+
+    for (int32_t i = 0; i < h; i++)
+    {
+        // Calculate pixel to draw from texture
+        uint32_t pix = texture->pixData[\
+			tileNum*texture->tileWidth*texture->tileHeight + \
+			(uint32_t)floor(((double)(offY + i)/(double)offH) * \
+			(texture->tileHeight)) * texture->tileWidth + column];
+		if (pix & 0xFF)
+		{
+			pix = RayEngine_pixGradientShader(pix, fadePercent, targetColor);
+			RayEngine_drawPix(buffer, x, i+y, pix, alphaNum, depth);
+    	}
+	}
+}
+
+/** RayEngine_renderBuffer
+ * @brief Merges opaque and alpha layers of buffer for rendering
+ * 
+ * @param buffer Buffer to render
+ */
+void RayEngine_renderBuffer(DepthBuffer* buffer)
+{
+	uint32_t width = buffer->pixelBuffer->width;
+	uint32_t height = buffer->pixelBuffer->height;
+	uint32_t pix;
+	for (int i = 0; i < width; i++)
+	{
+		for (int j = 0; j < height; j++)
+		{	
+			if (RayEngine_getDepth(buffer, i, j, BL_BASE) > RayEngine_getDepth(buffer, i, j, BL_ALPHA))
+			{
+				pix = PixBuffer_getPix(buffer->alphaBuffer, i, j);
+				PixBuffer_drawPixAlpha(buffer->pixelBuffer, i, j, pix, 1.0);
+			}
+		}
+	}
+}
+
+void RayEngine_resetDepthBuffer(DepthBuffer* buffer)
+{
+	uint32_t width = buffer->pixelBuffer->width;
+	uint32_t height = buffer->pixelBuffer->height;
+	// Clear pixels
+	// Reset depths
+	for (uint64_t i = 0; i < (uint64_t)(width*height); i++)
+	{
+		buffer->pixelBuffer->pixels[i] = 0;
+		buffer->alphaBuffer->pixels[i] = 0;
+		buffer->pixelDepth[i] = INFINITY;
+		buffer->alphaDepth[i] = INFINITY;
+	}
+}
+
+/** RayEngine_delDepthBuffer
+ * @brief Deallocates DepthBuffer memory
+ * ! Will destroy buffer
+ * @param buffer Buffer to free
+ */
+void RayEngine_delDepthBuffer(DepthBuffer* buffer)
+{
+	PixBuffer_delPixBuffer(buffer->pixelBuffer);
+	PixBuffer_delPixBuffer(buffer->alphaBuffer);
+	free(buffer->pixelDepth);
+	free(buffer->alphaDepth);
+	free(buffer);
+}
+
+//! Old
+/** RayEngine_generateMap
+ * @brief Generates new Map for game engine
+ * TODO: Update generator, move to GameEngine
+ * @param newMap Pointer to new Map
+ * @param charList Map data formatted as string
+ * TODO: Update map formatting, make real parser
+ * @param width Width of map in grid units
+ * @param height Height of map in grid units
+ * @param border size of border in grid units (for tiles maps)
+ * @param colorData Array of colors to render map tiles
+ * ! Warning: depricated feature, pre-textures
+ * @param numColor Number of colors in colorData
+ * ! Warning: depricated feature, pre-textures
+ */
 void RayEngine_generateMap(Map* newMap, unsigned char* charList, int width, int height, int border, SDL_Color* colorData, int numColor)
 {
 	newMap->data = charList;
@@ -28,6 +255,18 @@ void RayEngine_generateMap(Map* newMap, unsigned char* charList, int width, int 
 	newMap->border = border;
 }
 
+/** RayEngine_initSprite
+ * @brief Initializes new RaySprite for engine
+ * TODO: Better integrate with 2D sprites, add more metadata
+ * TODO: Consolidate w/ GameEngine
+ * @param newSprite Pointer to new RaySprite
+ * @param texture RayTex representing sprite frame data
+ * @param scaleFactor Default sprite size
+ * @param alphaNum Default sprite transparency
+ * @param x Map x coordinate
+ * @param y Map y coordinate
+ * @param h Map h coordinate
+ */
 void RayEngine_initSprite(RaySprite* newSprite, RayTex* texture, double scaleFactor, double alphaNum, double x, double y, double h)
 {
 	newSprite->texture = texture;
@@ -39,6 +278,15 @@ void RayEngine_initSprite(RaySprite* newSprite, RayTex* texture, double scaleFac
 	newSprite->frameNum = 0;
 }
 
+/** RayEngine_draw2DSprite
+ * @brief Renders a 2D sprite to the screen
+ * TODO: Consolidate w/ PixBuffer
+ * TODO: Better manage w/ 3D sprites
+ * @param buffer PixBuffer to render to
+ * @param sprite RaySprite to render
+ * @param angle Angle (rad) to render sprite at
+ * TODO: Add to sprite metadata
+ */
 void RayEngine_draw2DSprite(PixBuffer* buffer, RaySprite sprite, double angle)
 {
 	// First, compute screen-space sprite dimensions
@@ -71,15 +319,21 @@ void RayEngine_draw2DSprite(PixBuffer* buffer, RaySprite sprite, double angle)
 	}
 }
 
-void RayEngine_draw2DFrag(PixBuffer* buffer, RaySprite sprite, SDL_Rect fragCoords)
-{
-	// First, compute screen-space sprite dimensions
-	int32_t screenWidth = (int32_t)((double)sprite.texture->tileWidth*sprite.scaleFactor);
-	int32_t screenHeight = (int32_t)((double)sprite.texture->tileHeight*sprite.scaleFactor);
-	int32_t startX = (int32_t)(sprite.x - screenWidth / 2);
-	int32_t startY = (int32_t)(sprite.y - screenHeight / 2);
-}
-
+//! Old
+/** RayEngine_drawMinimap
+ * @brief Renders minimap to screen
+ * !! Very depricated code, does not work, cannot delete (???)
+ * TODO: Please fix all of this
+ * @param buffer PixBuffer to render minimap to
+ * @param camera Active camera to render from
+ * ! Also depricated, does not do anything
+ * @param width Width of window
+ * ! Redundant, pre-buffer size
+ * @param height Height of window
+ * ! Ditto
+ * @param map Map to render
+ * @param blockSize Size of tiles on rendered map
+ */
 void RayEngine_drawMinimap(PixBuffer* buffer, Camera* camera, unsigned int width, unsigned int height, Map* map, int blockSize)
 {
 	SDL_Rect mapRect;
@@ -114,6 +368,16 @@ void RayEngine_drawMinimap(PixBuffer* buffer, Camera* camera, unsigned int width
 	//PixBuffer_drawPix(buffer, camera->x * blockSize + mapRect.x, camera->y * blockSize + mapRect.y, cameraCol);
 }
 
+//! Old
+/** RayEngine_deleteMap
+ * @brief Destroy Map
+ * TODO: Update & move to GameEngine
+ * !!! Very very very depricated, pre-color, does not do anything
+ * @param map Pointer to map array (pre-color, no Map struct)
+ * ! Do not feed it a Map struct
+ * @param width Width of map (in tiles)
+ * @param height Height of map (in tiles)
+ */
 void RayEngine_deleteMap(unsigned char** map, int width, int height)
 {
 	for (int i = 0; i < height; i++)
@@ -123,6 +387,12 @@ void RayEngine_deleteMap(unsigned char** map, int width, int height)
 	free(map);
 }
 
+/** RayEngine_generateAngleValues
+ * @brief Creates a pregenerated list of angle offsets for Camera
+ * TODO: Consolidate w/ Camera struct and GameEngine code 
+ * @param width Width in pixels to generate offsets for
+ * @param camera Camera for offsets
+ */
 void RayEngine_generateAngleValues(uint32_t width, Camera* camera)
 {
 	double adjFactor = (double)width / (2 * tan(camera->fov / 2));
@@ -140,20 +410,23 @@ void RayEngine_generateAngleValues(uint32_t width, Camera* camera)
 	}
 }
 
-// Compare function for qsort
-int raycastCompare(const void *buffer1, const void *buffer2)
-{
-	if ((((RayColumn*)buffer2)->depth - ((RayColumn*)buffer1)->depth) < 0.0)
-	{
-		return -1;
-	}
-	else
-	{
-		return 1;
-	}
-}
-
-void RayEngine_raySpriteCompute(RayBuffer* rayBuffer, Camera* camera, uint32_t width, uint32_t height, double resolution, RaySprite sprite)
+//! RayBuffer dependent
+/** RayEngine_draw3DSprite
+ * @brief Renders 3D RaySprites for raycaster
+ * TODO: Update w/ DepthBuffer, consolidate w/ sprite struct better
+ * @param rayBuffer RayBuffer to render to
+ * ! Depricated, see DepthBuffer
+ * @param camera Camera to render from
+ * TODO: Update to make less jank
+ * @param width Window width (in pixels)
+ * ! Redundant
+ * @param height Window height (in pixels)
+ * ! Redundant
+ * @param resolution Raycast stepsize
+ * TODO: Use camera or engine parameter instead 
+ * @param sprite RaySprite to draw
+ */
+void RayEngine_draw3DSprite(DepthBuffer* buffer, Camera* camera, uint32_t width, uint32_t height, double resolution, RaySprite sprite)
 {
 	// Establish starting angle and sweep per column
 	double startAngle = camera->angle - camera->fov / 2.0;
@@ -197,17 +470,24 @@ void RayEngine_raySpriteCompute(RayBuffer* rayBuffer, Camera* camera, uint32_t w
 			uint32_t texCoord;
 			for (int32_t i = startX; i < endX; i++)
 			{
-				if (i >= 0 && i < width && rayBuffer[i].numLayers < 255)
+				if (i >= 0 && i < width)
 				{
+					double colorGrad;
+					double fogConstant = 1.5/5;
+					if (spriteDist < (camera->dist*fogConstant))
+					{
+						colorGrad = (spriteDist) / (camera->dist*fogConstant);
+					}
+					else
+					{
+						colorGrad = 1.0;
+					}
 					texCoord = (uint32_t)floor(((double)spriteColumn / (double)screenWidth) * sprite.texture->tileWidth);
-					rayBuffer[i].layers[rayBuffer[i].numLayers].texture = sprite.texture;
-					rayBuffer[i].layers[rayBuffer[i].numLayers].texCoord = texCoord;
-					rayBuffer[i].layers[rayBuffer[i].numLayers].tileNum = sprite.frameNum;
-					rayBuffer[i].layers[rayBuffer[i].numLayers].alphaNum = sprite.alphaNum;
-					rayBuffer[i].layers[rayBuffer[i].numLayers].depth = spriteDist;
-					rayBuffer[i].layers[rayBuffer[i].numLayers].yCoord = startY;
-					rayBuffer[i].layers[rayBuffer[i].numLayers].height = screenHeight;
-					rayBuffer[i].numLayers++;
+					RayEngine_drawTexColumn(
+						buffer, i, startY, screenHeight, spriteDist,
+						sprite.texture, sprite.frameNum, sprite.alphaNum,
+						texCoord, colorGrad, FOG_COLOR
+					);
 				}
 				spriteColumn++;
 			}
@@ -215,7 +495,8 @@ void RayEngine_raySpriteCompute(RayBuffer* rayBuffer, Camera* camera, uint32_t w
 	}
 }
 
-void RayEngine_raycastCompute(RayBuffer* rayBuffer, Camera* camera, uint32_t width, uint32_t height, Map* map, double resolution, RayTex* texData)
+//! RayBuffer dependent
+void RayEngine_raycastRender(DepthBuffer* buffer, Camera* camera, uint32_t width, uint32_t height, Map* map, double resolution, RayTex* texData)
 {
 	// Establish starting angle and sweep per column
 	double startAngle = camera->angle - camera->fov / 2.0;
@@ -263,18 +544,28 @@ void RayEngine_raycastCompute(RayBuffer* rayBuffer, Camera* camera, uint32_t wid
 					}
 					double depth = (double)(rayLen * cos(rayAngle - camera->angle));
 					//double colorGrad = (depth) / camera->dist;
+					//* Note: This is an awful mess but it is a temporary fix to get around rounding issues
 					int32_t drawHeight = (int32_t)ceil((double)height / (depth * 5));
-					int32_t wallHeight = (int32_t)ceil(-camera->h * height / (depth * 5));
-					int32_t startY = (int32_t)ceil((double)height / 2 - (double)drawHeight / 2 - wallHeight);
+					int32_t wallHeight = (int32_t)round(-camera->h * drawHeight);
+					int32_t startY = height / 2 - drawHeight / 2 - wallHeight;
+					int32_t offsetStartY = height / 2 - drawHeight / 2;
+					int32_t deltaY = height - offsetStartY * 2;
 					//SDL_Color fadeColor = {77,150,154,255};
-					rayBuffer[i].layers[rayBuffer[i].numLayers].texture = texData;
-					rayBuffer[i].layers[rayBuffer[i].numLayers].texCoord = texCoord;
-					rayBuffer[i].layers[rayBuffer[i].numLayers].tileNum = mapTile - 1;
-					rayBuffer[i].layers[rayBuffer[i].numLayers].alphaNum = 1;
-					rayBuffer[i].layers[rayBuffer[i].numLayers].depth = rayLen;
-					rayBuffer[i].layers[rayBuffer[i].numLayers].yCoord = startY;
-					rayBuffer[i].layers[rayBuffer[i].numLayers].height = drawHeight;
-					rayBuffer[i].numLayers++;
+					double colorGrad;
+					double fogConstant = 1.5/5;
+					if (rayLen < (camera->dist*fogConstant))
+					{
+						colorGrad = (rayLen) / (camera->dist*fogConstant);
+					}
+					else
+					{
+						colorGrad = 1.0;
+					}
+					RayEngine_drawTexColumn(
+						buffer, i, startY, deltaY, depth,
+						texData, mapTile - 1, 1.0, 
+						texCoord, colorGrad, FOG_COLOR
+					);
 					// Check for texture column transparency
 					uint8_t hasAlpha = 0;
 					for (int p = 0; p < texData->tileHeight; p++)
@@ -329,18 +620,6 @@ void RayEngine_raycastCompute(RayBuffer* rayBuffer, Camera* camera, uint32_t wid
 						continue;
 					}
 				}
-				else //Camera is in column
-				{
-					//PixBuffer_drawColumn(buffer, i, 0, height, colorDat);
-					rayBuffer[i].layers[rayBuffer[i].numLayers].texture = NULL;
-					rayBuffer[i].layers[rayBuffer[i].numLayers].texCoord = 0;
-					rayBuffer[i].layers[rayBuffer[i].numLayers].tileNum = 0;
-					rayBuffer[i].layers[rayBuffer[i].numLayers].alphaNum = 0;
-					rayBuffer[i].layers[rayBuffer[i].numLayers].depth = 0;
-					rayBuffer[i].layers[rayBuffer[i].numLayers].yCoord = 0;
-					rayBuffer[i].layers[rayBuffer[i].numLayers].height = 0;
-					rayBuffer[i].numLayers++;
-				}
 				break;
 			}
 			rayX += rayStepX;
@@ -367,42 +646,20 @@ void RayEngine_raycastCompute(RayBuffer* rayBuffer, Camera* camera, uint32_t wid
 	}
 }
 
-void RayEngine_texRaycastRender(PixBuffer* buffer, uint32_t width, uint32_t height, RayBuffer* rayBuffer, double renderDepth)
-{
-	SDL_Color fadeColor = FOG_COLOR;
-	SDL_Color colorDat = {0,0,0,0};
-	// For each screenwidth column
-	for (int i = 0; i < width; i++)
-	{
-		// Sort ray depth values
-		// (Furthest to closest, draw-order)
-		qsort(rayBuffer[i].layers, rayBuffer[i].numLayers, sizeof(RayColumn), raycastCompare);
-		// for every column in buffer...
-		if (!rayBuffer[i].layers[0].texture)
-		{
-			PixBuffer_drawColumn(buffer, i, 0, height, colorDat);
-		}
-		else
-		{
-			for (int j = 0; j < rayBuffer[i].numLayers; j++)
-			{
-				double colorGrad;
-				double fogConstant = 1.5/5;
-				if (rayBuffer[i].layers[j].depth < (renderDepth*fogConstant))
-				{
-					colorGrad = (rayBuffer[i].layers[j].depth) / (renderDepth*fogConstant);
-				}
-				else
-				{
-					colorGrad = 1.0;
-				}
-				PixBuffer_drawTexColumn(buffer, i, rayBuffer[i].layers[j].yCoord, rayBuffer[i].layers[j].height, rayBuffer[i].layers[j].texture, rayBuffer[i].layers[j].tileNum, rayBuffer[i].layers[j].alphaNum, rayBuffer[i].layers[j].texCoord, colorGrad, fadeColor);
-			}
-		}
-		rayBuffer[i].numLayers = 0;
-	}
-}
-
+/** getInterDist
+ * @brief Compute linear interpolation of ray intersect with wall
+ * 
+ * @param dx x displacement along ray step
+ * @param dy y displacement along ray step
+ * @param xi Initial x coordinate
+ * @param yi Initial y coordinate
+ * @param coordX Grid tile x coordinate
+ * @param coordY Grid tile y coordinate
+ * @param newX Interpolated x coordinate
+ * @param newY Interpolated y coordinate
+ * @param side Numerical representation of side of intersect
+ * @return double Adjusted distance to intersect
+ */
 double getInterDist(double dx, double dy, double xi, double yi, double coordX, double coordY, double* newX, double* newY, uint8_t* side)
 {
 	// Check side intercepts first
@@ -449,6 +706,25 @@ double getInterDist(double dx, double dy, double xi, double yi, double coordX, d
 	return minDist;
 }
 
+/** RayEngine_texRenderFloor
+ * @brief Renders raycasted floor
+ * TODO: Add depth
+ * TODO: Make mappable
+ * TODO: Make multilayer
+ * TODO: Consolidate w/ floor renderer
+ * @param buffer PixBuffer to render to
+ * @param camera Camera to render from
+ * @param width Width of pixbuffer in pixels
+ * @param height Height of pixbuffer in pixels
+ * @param groundMap Tile map to render from
+ * ! Doesn't do anything atm
+ * TODO: Integrate with main map
+ * @param resolution ???
+ * TODO: Remove, does nothing
+ * @param texData Texture to render to floor
+ * @param tileNum Number of tile from texture set to render
+ * TODO: Placeholder, remove when mapping added
+ */
 void RayEngine_texRenderFloor(PixBuffer* buffer, Camera* camera, uint32_t width, uint32_t height, Map* groundMap, double resolution, RayTex* texData, uint8_t tileNum)
 {
 	double scaleFactor = (double)width / (double)height * 2.4;
@@ -520,6 +796,20 @@ void RayEngine_texRenderFloor(PixBuffer* buffer, Camera* camera, uint32_t width,
 	}
 }
 
+/** RayEngine_texRenderCeiling
+ * @brief Renders raycasted ceiling
+ * TODO: See above (RayEngine_texRenderFloor)
+ * @param buffer PixBuffer to render to
+ * @param camera Camera to render from
+ * @param width Width of pixbuffer in pixels
+ * @param height Height of pixbuffer in pixels
+ * @param groundMap Tile map to render from
+ * ! Doesn't do anything atm
+ * TODO: Integrate with main map
+ * @param texData Texture to render to floor
+ * @param tileNum Number of tile from texture set to render
+ * TODO: Placeholder, remove when mapping added
+ */
 void RayEngine_texRenderCeiling(PixBuffer* buffer, Camera* camera, uint32_t width, uint32_t height, Map* ceilingMap, RayTex* texData, uint8_t tileNum)
 {
 	double scaleFactor = (double)width / (double)height * 2.4;
