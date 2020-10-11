@@ -87,3 +87,17 @@
     - Fixed warnings
     - Removed classic renderer
     - Removed broken map code
+## 10/11/2020
+- misc
+    - Moved source files to subdirectories (src, include)
+    - Added stb_image library (see for licence)
+- Makefile
+    - Improved makefile substantially
+- assets
+    - Added PNGs for some of textures for STB loading
+- engine_demo
+    - Added driver code for image loading, mouse control, etc
+- gameengine
+    - Added mouse control to player
+- pixrender
+    - Added initialization and destruction functions for ray textures

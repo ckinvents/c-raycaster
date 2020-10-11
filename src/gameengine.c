@@ -12,7 +12,7 @@
 #include <math.h>
 #include "gameengine.h"
 
-void GameEngine_initPlayer(Player* player, double x, double y, double angle, double fov, double viewDist, uint32_t screenWidth)
+void GameEngine_initPlayer(Player* player, double x, double y, double angle, uint8_t usingMouse, double fov, double viewDist, uint32_t screenWidth)
 {
 	player->x = x;
 	player->y = y;
@@ -20,6 +20,7 @@ void GameEngine_initPlayer(Player* player, double x, double y, double angle, dou
 	player->angle = angle;
 	player->health = 100; //PLACEHOLDER
 	player->state = 1; //PLACEHOLDER
+	player->usingMouse = usingMouse;
 	player->spacePressed = 0;
 	player->timer = 0;
 	player->camera.x = player->x;
@@ -206,13 +207,27 @@ void GameEngine_updatePlayer(Player* player, Map* map, KeyMap* keyMap, double dt
 			if (((newY < 0 || newY >= map->height) || (oldX < 0 || oldX >= map->width)) || map->data[newY*map->width+oldX] == 0)
 				player->y += player->velY;
 		}
-		if (keys[PK_TCC])
+		if (player->usingMouse)
 		{
-			player->angle -= speedFactor*dt;
+			if (SDL_GetRelativeMouseMode())
+			{
+				// Get mouse change since last frame
+				int32_t mouseX;
+				SDL_GetRelativeMouseState(&mouseX, NULL);
+				// Update player
+				player->angle += 0.25 * dt * mouseX;
+			}
 		}
-		else if (keys[PK_TC])
+		else
 		{
-			player->angle += speedFactor*dt;
+			if (keys[PK_TCC])
+			{
+				player->angle -= speedFactor*dt;
+			}
+			else if (keys[PK_TC])
+			{
+				player->angle += speedFactor*dt;
+			}
 		}
 		if (player->angle >= (2 * M_PI))
 		{

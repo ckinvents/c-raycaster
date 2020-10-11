@@ -1,7 +1,7 @@
 #ifndef RENDER_H
 #define RENDER_H
 
-#include "SDL2/SDL.h"
+#include <SDL2/SDL.h>
 #include <stdio.h>
 #include <math.h>
 #define WIDDERSHINS 1024
@@ -42,5 +42,8 @@ uint32_t PixBuffer_getTex(RayTex* texture, uint8_t tileNum, uint32_t x, uint32_t
 void PixBuffer_drawPix(PixBuffer* buffer, uint32_t x, uint32_t y, uint32_t color);
 void PixBuffer_drawPixAlpha(PixBuffer* buffer, uint32_t x, uint32_t y, uint32_t color, double alphaNum);
 void PixBuffer_drawPixDouble(PixBuffer* buffer, double x, double y, uint32_t color, double alphaNum);
+
+RayTex* RayTex_initFromRGBA(uint8_t* rgbaData, uint32_t tileWidth, uint32_t tileHeight, uint8_t numTiles);
+void RayTex_delRayTex(RayTex* tex);
 
 #endif//RENDER_H

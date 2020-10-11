@@ -10,15 +10,15 @@ Now with sprites: Not fully implemented yet but they render! That's a thing.
 
 WARNING: This project is very much a wip ~~and doesn't even have a makefile yet~~ (Just added!). I'll be sure to add more info as stuff progresses (including documentation, which is currently very lacking) but this is an expirement so it will never be a particularly good engine. If you want something to use for your own game, with multiple level support ~~and texturing~~ (now added) and all of that other jazz (that actually runs well, RIP optimization), there's plenty of other stuff online.
 
-Update: Now there's a makefile. (Yay!)
+Update: ~~Now there's a makefile. (Yay!)~~ Now there's a *working* makefile (working-ish, make sure to change library dirs)
 
 Controls:
 - w, s to move forward and backwards
 - q, e to strafe left and right, respectively
-- a, d to rotate counterclockwise and clockwise (respectively, duh)
-- shift to sprint in literally every direction (minus turning, personal preference)
+- ~~a, d to rotate counterclockwise and clockwise (respectively, duh)~~ Nope we're using mouse movement now :|
+- shift to sprint in literally every direction
 - left control to crouch
-- k to, er, kill the player
+- k to kill the player
 - r to respawn when dead
 
 Features / Goals:
@@ -35,7 +35,7 @@ Features / Goals:
 - [x] Floors / Ceilings
 - [ ] AI and collisions for entities
 - [ ] More complex sprite handling
-- [ ] Improved memory management
+- [ ] Improved memory management (hah)
 - [ ] Mapable floors / ceilings
 - [ ] Scrolling skyboxes (currently in progress)
 - [ ] Multi-level maps with transitions/procedural generation

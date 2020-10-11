@@ -633,3 +633,33 @@ void PixBuffer_drawPixDouble(PixBuffer* buffer, double x, double y, uint32_t col
     }
     //PixBuffer_drawPixAlpha(buffer, baseX, baseY, color, alphaNum);
 }
+
+// RAYTEX FUNCTIONS
+RayTex* RayTex_initFromRGBA(uint8_t* rgbaData, uint32_t tileWidth, uint32_t tileHeight, uint8_t numTiles)
+{
+    RayTex* newTex = (RayTex*)malloc(sizeof(RayTex));
+    newTex->tileWidth = tileWidth;
+    newTex->tileHeight = tileHeight;
+    newTex->tileCount = numTiles;
+    // Convert color chars into pixel ints
+    newTex->pixData = 
+        (uint32_t*)malloc(sizeof(uint32_t)*tileWidth*tileHeight*numTiles);
+    uint32_t newPix = 0;
+    for (uint32_t p = 0; p < tileWidth * tileHeight * numTiles; p++)
+    {
+        // Get each component
+        for (uint8_t comp = 0; comp < 4; comp++)
+        {
+            newPix |= ((uint32_t)(rgbaData[p*4+comp]) << (8 * (3-comp)));
+        }
+        newTex->pixData[p] = newPix;
+        newPix = 0;
+    }
+    return newTex;
+}
+
+void RayTex_delRayTex(RayTex* tex)
+{
+    free(tex->pixData);
+    free(tex);
+}

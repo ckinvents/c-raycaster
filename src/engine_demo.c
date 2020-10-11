@@ -3,7 +3,9 @@
 #include <math.h>
 #include "gameengine.h"
 #include "pixrender.h"
-#include "assets/asset_list.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+#include "../assets/asset_list.h" // DEPRECATED
 //#include "private_assets/private_asset_list.h"
 
 #define SCALE 4
@@ -53,25 +55,6 @@ int main(int argc, char* argv[])
 		0,0,0,0,0,0,0,0,0,3,
 		6,0,0,0,6,3,0,0,0,3,
 		6,6,0,6,6,3,3,3,3,3
-	};
-
-	static const uint32_t box_data[256] = {
-		0xa1c4b4ff, 0xa1c4b4ff, 0xa1c4b4ff, 0xa1c4b4ff, 0xa1c4b4ff, 0xa1c4b4ff, 0xa1c4b4ff, 0xa1c4b4ff, 0xa1c4b4ff, 0xa1c4b4ff, 0xa1c4b4ff, 0xa1c4b4ff, 0xa1c4b4ff, 0xa1c4b4ff, 0xa1c4b4ff, 0xa1c4b4ff, 
-		0xa1c4b4ff, 0x5bab85ff, 0xa1c4b4ff, 0x5bab85ff, 0xa1c4b4ff, 0x5bab85ff, 0xa1c4b4ff, 0x5bab85ff, 0xa1c4b4ff, 0x5bab85ff, 0xa1c4b4ff, 0x5bab85ff, 0xa1c4b4ff, 0x5bab85ff, 0x3c6b9aff, 0x293c84ff, 
-		0xa1c4b4ff, 0x3c6b9aff, 0x5bab85ff, 0x3c6b9aff, 0x5bab85ff, 0x293c84ff, 0x5bab85ff, 0x3c6b9aff, 0x5bab85ff, 0x3c6b9aff, 0x5bab85ff, 0x293c84ff, 0x5bab85ff, 0x293c84ff, 0x293c84ff, 0x261a10ff, 
-		0x261a10ff, 0x293c84ff, 0x293c84ff, 0x5bab85ff, 0x293c84ff, 0x261a10ff, 0x293c84ff, 0x5bab85ff, 0x3c6b9aff, 0x5bab85ff, 0x293c84ff, 0x261a10ff, 0x293c84ff, 0x261a10ff, 0x261a10ff, 0x5a1e63ff, 
-		0xcfbbaaff, 0x261a10ff, 0x261a10ff, 0x293c84ff, 0x261a10ff, 0x936138ff, 0x261a10ff, 0x293c84ff, 0x5bab85ff, 0x293c84ff, 0x261a10ff, 0x261a10ff, 0x261a10ff, 0x5a1e63ff, 0x936138ff, 0x5a1e63ff, 
-		0xcfbbaaff, 0x936138ff, 0xcfbbaaff, 0x261a10ff, 0x936138ff, 0x936138ff, 0x936138ff, 0x261a10ff, 0x293c84ff, 0x261a10ff, 0x261a10ff, 0xcfbbaaff, 0x261a10ff, 0x261a10ff, 0x5a1e63ff, 0x5a1e63ff, 
-		0xcfbbaaff, 0x936138ff, 0x936138ff, 0x936138ff, 0x936138ff, 0x936138ff, 0x936138ff, 0x936138ff, 0x261a10ff, 0x5a1e63ff, 0x261a10ff, 0xcfbbaaff, 0xcfbbaaff, 0xcfbbaaff, 0x261a10ff, 0x261a10ff, 
-		0xcfbbaaff, 0x5a1e63ff, 0x5a1e63ff, 0x936138ff, 0x5a1e63ff, 0x936138ff, 0x936138ff, 0x936138ff, 0x5a1e63ff, 0x5a1e63ff, 0x261a10ff, 0xcfbbaaff, 0xcfbbaaff, 0x936138ff, 0xcfbbaaff, 0xcfbbaaff, 
-		0x261a10ff, 0x261a10ff, 0x261a10ff, 0x5a1e63ff, 0x936138ff, 0x5a1e63ff, 0x936138ff, 0x5a1e63ff, 0x936138ff, 0x5a1e63ff, 0x261a10ff, 0xcfbbaaff, 0x936138ff, 0xcfbbaaff, 0x936138ff, 0x5a1e63ff, 
-		0xcfbbaaff, 0xcfbbaaff, 0xcfbbaaff, 0x261a10ff, 0x5a1e63ff, 0x5a1e63ff, 0x5a1e63ff, 0x5a1e63ff, 0x5a1e63ff, 0x261a10ff, 0xcfbbaaff, 0xcfbbaaff, 0xcfbbaaff, 0x936138ff, 0x936138ff, 0x5a1e63ff, 
-		0xcfbbaaff, 0xcfbbaaff, 0x936138ff, 0xcfbbaaff, 0x261a10ff, 0x261a10ff, 0x261a10ff, 0x5a1e63ff, 0x5a1e63ff, 0x261a10ff, 0xcfbbaaff, 0xcfbbaaff, 0x936138ff, 0xcfbbaaff, 0x936138ff, 0x5a1e63ff, 
-		0xcfbbaaff, 0x936138ff, 0xcfbbaaff, 0x936138ff, 0xcfbbaaff, 0xcfbbaaff, 0xcfbbaaff, 0x261a10ff, 0x261a10ff, 0xcfbbaaff, 0xcfbbaaff, 0x936138ff, 0x936138ff, 0x936138ff, 0x5a1e63ff, 0x5a1e63ff, 
-		0xcfbbaaff, 0xcfbbaaff, 0x936138ff, 0xcfbbaaff, 0x936138ff, 0x936138ff, 0x936138ff, 0xcfbbaaff, 0x261a10ff, 0xcfbbaaff, 0x936138ff, 0xcfbbaaff, 0x936138ff, 0x5a1e63ff, 0x936138ff, 0x5a1e63ff, 
-		0xcfbbaaff, 0x936138ff, 0x936138ff, 0x936138ff, 0x936138ff, 0x936138ff, 0x5a1e63ff, 0x5a1e63ff, 0x261a10ff, 0xcfbbaaff, 0x936138ff, 0x936138ff, 0x936138ff, 0x936138ff, 0x5a1e63ff, 0x5a1e63ff, 
-		0xcfbbaaff, 0x936138ff, 0x936138ff, 0x5a1e63ff, 0x936138ff, 0x5a1e63ff, 0x936138ff, 0x5a1e63ff, 0x261a10ff, 0xcfbbaaff, 0x936138ff, 0x5a1e63ff, 0x936138ff, 0x5a1e63ff, 0x5a1e63ff, 0x5a1e63ff, 
-		0xcfbbaaff, 0x5a1e63ff, 0x5a1e63ff, 0x5a1e63ff, 0x5a1e63ff, 0x5a1e63ff, 0x5a1e63ff, 0x5a1e63ff, 0x261a10ff, 0xcfbbaaff, 0x5a1e63ff, 0x5a1e63ff, 0x5a1e63ff, 0x5a1e63ff, 0x5a1e63ff, 0x5a1e63ff
 	};
 
 	/*unsigned char testMapChar[MAP_WIDTH*MAP_HEIGHT] = {
@@ -176,21 +159,21 @@ int main(int argc, char* argv[])
 	RayEngine_generateMap(&testMap, testMapChar, MAP_WIDTH, MAP_HEIGHT, 2, colorKey, 4);
 
 	// Demo texture
-	RayTex boxTex;
-	boxTex.pixData = (uint32_t*)box_data;
-	boxTex.tileCount = 1;
-	boxTex.tileHeight = 16;
-	boxTex.tileWidth = 16;
+	int32_t mPixWidth;
+	int32_t mPixHeight;
+	uint8_t* mapPixDat = stbi_load("assets/cobblebrick.png", &mPixWidth, &mPixHeight, NULL, 0);
+	if (!mapPixDat)
+	{
+		fprintf(stderr, "FATAL: Could not load textures. Exiting...\n");
+		return -1;
+	}
+	RayTex* worldTex = RayTex_initFromRGBA(mapPixDat, (uint32_t)mPixWidth, (uint32_t)mPixWidth, mPixHeight/mPixWidth);
+	stbi_image_free(mapPixDat);
 	RayTex mapTex;
 	mapTex.pixData = (uint32_t*)blox_data;
 	mapTex.tileCount = 9;
 	mapTex.tileHeight = 16;
 	mapTex.tileWidth = 16;
-	RayTex worldTex;
-	worldTex.pixData = (uint32_t*)world_tex_data;
-	worldTex.tileCount = 7;
-	worldTex.tileWidth = 32;
-	worldTex.tileHeight = 32;
 
 	// Shadow texture
 	RayTex shadowTex;
@@ -220,7 +203,7 @@ int main(int argc, char* argv[])
 	// Demo player
 	double angleValues[WIDTH];
 	Player testPlayer;
-	GameEngine_initPlayer(&testPlayer, 1.5, 1.5, 0, M_PI/2, depth, WIDTH);
+	GameEngine_initPlayer(&testPlayer, 1.5, 1.5, 0, 1, M_PI/2, depth, WIDTH);
 
 	// Init keymapping
 	KeyMap testKeys;
@@ -322,6 +305,7 @@ int main(int argc, char* argv[])
 	double runTimeF = (double)runTime/1000;
 
 	double toggleSaturation = 0;
+	SDL_SetRelativeMouseMode(SDL_TRUE);
 	while(!quit)
 	{
 		GameEngine_updateKeys(&testKeys);
@@ -339,6 +323,8 @@ int main(int argc, char* argv[])
 			{
 				paused = !paused;
 				pauseKeyPressed = 1;
+				SDL_WarpMouseInWindow(window, 0, 0);
+				SDL_SetRelativeMouseMode(!SDL_GetRelativeMouseMode());
 			}
 			else if (event.type == SDL_KEYUP && event.key.keysym.scancode == SDL_SCANCODE_DELETE)
 			{
@@ -377,9 +363,9 @@ int main(int argc, char* argv[])
 		////PixBuffer_drawBuffOffset(&buffer, &background, WIDTH, HEIGHT, testPlayer.angle*scrollConst);
 		RayEngine_resetDepthBuffer(buffer);
 		memcpy(buffer->pixelBuffer->pixels, background.pixels, sizeof(uint32_t)*WIDTH*HEIGHT);
-		RayEngine_texRenderFloor(buffer->pixelBuffer, &testPlayer.camera, WIDTH, HEIGHT, NULL, 0, &worldTex, 6);
-		RayEngine_raycastRender(buffer, &(testPlayer.camera), WIDTH, HEIGHT, &testMap, 0.01, &worldTex);
-		////RayEngine_raycastCompute(rayBuffer, &(testPlayer.camera), WIDTH, HEIGHT, &testMap, 0.01, &worldTex);
+		RayEngine_texRenderFloor(buffer->pixelBuffer, &testPlayer.camera, WIDTH, HEIGHT, NULL, 0, worldTex, 6);
+		RayEngine_raycastRender(buffer, &(testPlayer.camera), WIDTH, HEIGHT, &testMap, 0.01, worldTex);
+		////RayEngine_raycastCompute(rayBuffer, &(testPlayer.camera), WIDTH, HEIGHT, &testMap, 0.01, worldTex);
 		// Update & draw sprites
 		for (uint8_t s = 0; s < numEntities; s++)
 		{
@@ -391,7 +377,7 @@ int main(int argc, char* argv[])
 			RayEngine_draw3DSprite(buffer, &(testPlayer.camera), WIDTH, HEIGHT, 0.01, entityList[s].shadow);
 		}
 		RayEngine_renderBuffer(buffer);
-		////RayEngine_texRenderCeiling(&buffer, &testPlayer.camera, WIDTH, HEIGHT, NULL, &worldTex, 7);
+		////RayEngine_texRenderCeiling(&buffer, &testPlayer.camera, WIDTH, HEIGHT, NULL, worldTex, 7);
 		// Player death animation
 		if (!testPlayer.state && testPlayer.timer < 2)
 		{
@@ -399,7 +385,7 @@ int main(int argc, char* argv[])
 		}
 		else if (testPlayer.state == 2)
 		{
-			GameEngine_initPlayer(&testPlayer, 1.5, 1.5, 0, M_PI/2, depth, WIDTH);
+			GameEngine_initPlayer(&testPlayer, 1.5, 1.5, 0, 1, M_PI/2, depth, WIDTH);
 		}
 		RayEngine_draw2DSprite(buffer->pixelBuffer, cursorSprite, 2*runTimeF);
 		////PixBuffer_fillBuffer(&buffer, PixBuffer_toPixColor(50, 50, 50, 255), 0.2);
@@ -432,6 +418,7 @@ int main(int argc, char* argv[])
 
 	// Clean up and quit
 	RayEngine_delDepthBuffer(buffer);
+	RayTex_delRayTex(worldTex);
 	free(background.pixels);
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);

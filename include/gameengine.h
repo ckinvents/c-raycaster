@@ -13,6 +13,7 @@ typedef struct _Player {
     double velY;
     double velH;
 	double angle;
+    uint8_t usingMouse;
     uint8_t health;
     uint8_t state;
     double timer;
@@ -65,7 +66,7 @@ typedef struct {
     Entity projectiles[64];
 } ProjectileList;
 
-void GameEngine_initPlayer(Player* player, double x, double y, double angle, double fov, double viewDist, uint32_t screenWidth);
+void GameEngine_initPlayer(Player* player, double x, double y, double angle, uint8_t usingMouse, double fov, double viewDist, uint32_t screenWidth);
 void GameEngine_initEntity(Entity* entity, double x, double y, double h, double angle, RayTex* spriteTex, RayTex* shadowTex);
 void GameEngine_initProjectiles(ProjectileList* projectiles, uint32_t numProjectile, RayTex* spriteTex, RayTex* shadowTex);
 void GameEngine_moveEntity(Entity* entity, double x, double y, double h);
